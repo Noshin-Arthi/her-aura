@@ -1,0 +1,17 @@
+# Render Blueprint: Render reads this file and creates the web service.
+# Docs: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: her-aura
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: SECRET_KEY
+        generateValue: true          # Render creates a random secret for you
+      - key: DATABASE_URL
+        sync: false                  # paste your Neon connection string in the Render dashboard

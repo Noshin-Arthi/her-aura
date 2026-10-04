@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Her Aura{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a href="/" class="brand" data-testid="brand">Her Aura</a>
+    {% if user %}
+    <nav id="main-nav" aria-label="Main">
+      <a href="/dashboard" id="nav-dashboard">Dashboard</a>
+      <a href="/health" id="nav-health">Log health</a>
+      <a href="/log" id="nav-log">Cycle</a>
+      <a href="/sleep" id="nav-sleep">Sleep</a>
+      <a href="/mind" id="nav-mind">Mind</a>
+      <a href="/load" id="nav-load">Emotional load</a>
+      <a href="/learn" id="nav-learn">Learn</a>
+      <a href="/doctors" id="nav-doctors">Doctors</a>
+      <a href="/appointments" id="nav-appointments">Appointments</a>
+      <span id="nav-user" class="muted">{{ user.full_name }}</span>
+      <form method="post" action="/logout" class="inline"><button id="btn-logout" class="link">Log out</button></form>
+    </nav>
+    {% endif %}
+  </header>
+  <main class="container">
+    {% if error %}<div class="alert error" role="alert" id="error-message">{{ error }}</div>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="footer muted" id="footer">Her Aura is not a medical device, does not diagnose any condition and is not a contraceptive. Demo app: please don't enter real health information.</footer>
+</body>
+</html>

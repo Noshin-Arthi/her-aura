@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Log a health issue - Her Aura{% endblock %}
+{% block content %}
+<h1>How are you feeling?</h1>
+<form method="post" action="/health" id="health-form" class="card form">
+  <label for="health_date">Date</label>
+  <input id="health_date" name="log_date" type="date" value="{{ today }}" max="{{ today }}" required>
+
+  <span class="label">What's bothering you?</span>
+  <div class="chips" role="radiogroup" aria-label="Health issue">
+    {% for key, (text, specialty, _) in categories.items() %}
+    <label class="chip"><input type="radio" name="category" id="issue-{{ key }}" value="{{ key }}" required> {{ text }}</label>
+    {% endfor %}
+  </div>
+
+  <label for="severity">How bad is it? (1 = mild, 10 = severe)</label>
+  <input id="severity" name="severity" type="number" inputmode="numeric" min="1" max="10" value="5" required>
+
+  <details>
+    <summary>Add details (optional)</summary>
+    <textarea id="health_notes" name="notes" maxlength="1000" rows="3" placeholder="Where, since when, what helps or makes it worse"></textarea>
+  </details>
+
+  <button type="submit" id="btn-save-issue">Save</button>
+</form>
+<p class="muted small">Period tracking lives under <a href="/log">Cycle</a>.</p>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Mind - Her Aura{% endblock %}
+{% block content %}
+<h1>Mindfulness for beginners</h1>
+<p class="lead">Seven short sessions, one new skill a day. Each day unlocks after the one before.</p>
+{% if late_luteal %}<div class="alert tip" id="late-luteal-tip">{{ tip }}</div>{% endif %}
+
+<p id="mind-progress">Progress: <strong>{{ done | length }}</strong> of {{ program | length }} days
+  <progress max="{{ program | length }}" value="{{ done | length }}" aria-label="Programme progress"></progress></p>
+{% if next_day is none %}<div class="alert success" id="program-complete">Programme complete. Keep a short daily practice going.</div>{% endif %}
+
+<div class="program">
+{% for item in program %}
+  {% set state = 'done' if item.day in done else ('current' if item.day == next_day else 'locked') %}
+  <article class="card session {{ state }}" data-testid="mind-day" data-day="{{ item.day }}" data-state="{{ state }}">
+    <h2>Day {{ item.day }}: {{ item.title }} <span class="muted small">· {{ item.minutes }} min</span></h2>
+    {% if state == 'locked' %}
+      <p class="muted">Complete day {{ item.day - 1 }} to unlock.</p>
+    {% else %}
+      <ol>{% for step in item.steps %}<li>{{ step }}</li>{% endfor %}</ol>
+      {% if state == 'current' %}
+      <div class="timer" data-seconds="{{ item.minutes * 60 }}">
+        <button type="button" class="secondary" data-testid="btn-start-timer">Start {{ item.minutes }}-minute timer</button>
+        <span class="timer-display" aria-live="polite"></span>
+      </div>
+      <form method="post" action="/mind/{{ item.day }}/complete">
+        <button type="submit" data-testid="btn-complete-day">Mark day {{ item.day }} done</button>
+      </form>
+      {% else %}
+      <p class="muted small">Done ✓</p>
+      {% endif %}
+    {% endif %}
+  </article>
+{% endfor %}
+</div>
+
+<script>
+document.querySelectorAll('.timer').forEach(box => {
+  const btn = box.querySelector('button'), out = box.querySelector('.timer-display');
+  btn.addEventListener('click', () => {
+    let left = +box.dataset.seconds;
+    btn.disabled = true;
+    const tick = () => {
+      out.textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+      if (left-- <= 0) { clearInterval(id); out.textContent = 'Time is up. Notice how you feel.'; btn.disabled = false; }
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+  });
+});
+</script>
+{% endblock %}

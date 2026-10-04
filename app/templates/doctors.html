@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Doctors - Her Aura{% endblock %}
+{% block content %}
+<h1>Doctors</h1>
+<form method="get" action="/doctors" class="filter" id="specialty-filter">
+  <label for="specialty">Specialty</label>
+  <select id="specialty" name="specialty" onchange="this.form.submit()">
+    <option value="">All specialties</option>
+    {% for sp in specialties %}<option value="{{ sp }}" {% if sp == selected_specialty %}selected{% endif %}>{{ sp }}</option>{% endfor %}
+  </select>
+  <noscript><button type="submit">Filter</button></noscript>
+</form>
+{% if not doctors %}<p id="no-doctors">No doctors found for this specialty.</p>{% endif %}
+<div class="grid">
+{% for doctor in doctors %}
+  <article class="card" data-testid="doctor-card" data-doctor-id="{{ doctor.id }}">
+    <h2 data-testid="doctor-name">{{ doctor.full_name }}</h2>
+    <p><span data-testid="doctor-specialty">{{ doctor.specialty }}</span> · {{ doctor.clinic.name }}</p>
+    <p class="muted small">{{ doctor.clinic.address }}</p>
+    {% if doctor.clinic.phone %}<p class="small"><a href="tel:{{ doctor.clinic.phone | replace('-', '') }}" data-testid="clinic-call">Call clinic: {{ doctor.clinic.phone }}</a></p>{% endif %}
+    {% if slots[doctor.id] %}
+    <form method="post" action="/appointments/book" class="form" data-testid="booking-form">
+      <label for="slot-{{ doctor.id }}">Available times</label>
+      <select id="slot-{{ doctor.id }}" name="slot_id" data-testid="slot-select">
+        {% for slot in slots[doctor.id] %}
+        <option value="{{ slot.id }}">{{ slot.starts_at.strftime('%a %d %b, %I:%M %p') }}</option>
+        {% endfor %}
+      </select>
+      <label for="reason-{{ doctor.id }}">Reason (optional)</label>
+      <input id="reason-{{ doctor.id }}" name="reason" maxlength="255" data-testid="reason-input">
+      <button type="submit" data-testid="btn-book">Book</button>
+    </form>
+    {% else %}
+    <p class="muted" data-testid="no-slots">No open slots.</p>
+    {% endif %}
+  </article>
+{% endfor %}
+</div>
+{% endblock %}

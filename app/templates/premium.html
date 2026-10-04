@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}Premium - Her Aura{% endblock %}
+{% block content %}
+<h1>Her Aura Premium</h1>
+<p class="lead">Tracking, suggestions and all safety information stay free forever. Premium unlocks the full reading library without ads.</p>
+
+<table id="plan-table" class="plans">
+  <thead><tr><th></th><th>Free</th><th>Premium</th></tr></thead>
+  <tbody>
+    <tr><td>Health, cycle, sleep, mind and emotional-load tracking</td><td>✓</td><td>✓</td></tr>
+    <tr><td>Doctor suggestions and booking</td><td>✓</td><td>✓</td></tr>
+    <tr><td>10 featured articles, incl. all warning-sign and screening guides</td><td>✓</td><td>✓</td></tr>
+    <tr><td>Library ({{ premium_count }} more articles)</td><td>{{ max_ads }} ad unlocks a day</td><td>All, no ads</td></tr>
+    <tr><td>Price</td><td>Free</td><td>To be set (demo)</td></tr>
+  </tbody>
+</table>
+
+{% if user.plan == 'premium' %}
+  <p id="current-plan">You're on <strong>Premium</strong>.</p>
+  <form method="post" action="/premium/free"><button class="secondary" id="btn-cancel-premium">Switch back to Free</button></form>
+{% else %}
+  <form method="post" action="/premium/premium"><button id="btn-start-premium">Start Premium (demo: no payment)</button></form>
+{% endif %}
+<p class="muted small">Demo: no payment is taken. Real payments (e.g. a bKash or card sandbox) are a planned exercise.</p>
+{% endblock %}

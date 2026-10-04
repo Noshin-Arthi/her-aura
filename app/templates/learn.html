@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Learn - Her Aura{% endblock %}
+{% macro card(a) %}
+<article class="card article {{ 'locked' if not a.unlocked }}" data-testid="article-card" data-slug="{{ a.slug }}"
+         data-tier="{{ a.tier }}" data-unlocked="{{ 'true' if a.unlocked else 'false' }}">
+  <p class="muted small"><span class="topic">{{ a.topic }}</span> · {{ a.source }} · {{ a.minutes }} min read
+    {% if a.safety %}<span class="badge" data-testid="always-free">Always free</span>{% endif %}</p>
+  <h3>{{ a.title }}</h3>
+  <p>{{ a.summary }}</p>
+  {% if a.unlocked %}
+    <a class="button secondary" href="{{ a.url }}" target="_blank" rel="noopener" data-testid="read-link">Read on {{ a.source }} ↗</a>
+  {% else %}
+    <div class="unlock-actions">
+      <a class="button" href="/premium" data-testid="go-premium">Go Premium</a>
+      {% if ads_left > 0 %}
+      <form method="post" action="/learn/{{ a.slug }}/ad/start" class="inline">
+        <button type="submit" class="secondary" data-testid="watch-ad">Watch a short ad to unlock for 24h</button>
+      </form>
+      {% else %}<span class="muted small" data-testid="no-ads-left">No ad unlocks left today</span>{% endif %}
+    </div>
+  {% endif %}
+</article>
+{% endmacro %}
+{% block content %}
+<h1>Learn</h1>
+<p class="lead">Trusted reading on women's health from the WHO, NHS and ACOG, with a short summary from us. Plan: <strong id="plan">{{ user.plan | capitalize }}</strong>
+  {% if user.plan == 'free' %} · <a href="/premium">See Premium</a>{% endif %}</p>
+{% if unlocked %}<div class="alert success" id="success-message">Unlocked for 24 hours. Enjoy the read.</div>{% endif %}
+
+<form method="get" action="/learn" class="filter" id="topic-filter">
+  <label for="topic">Topic</label>
+  <select id="topic" name="topic" onchange="this.form.submit()">
+    <option value="">All topics</option>
+    {% for t in topics %}<option value="{{ t }}" {% if t == topic %}selected{% endif %}>{{ t }}</option>{% endfor %}
+  </select>
+  <noscript><button type="submit">Filter</button></noscript>
+</form>
+
+<section id="featured">
+  <h2>Featured: free for everyone</h2>
+  <div class="grid">{% for a in featured %}{{ card(a) }}{% else %}<p class="muted">No featured articles for this topic.</p>{% endfor %}</div>
+</section>
+
+<section id="library">
+  <h2>Library {% if user.plan == 'free' %}<span class="muted small">· Premium, or unlock one with a short ad ({{ ads_left }} left today)</span>{% endif %}</h2>
+  <div class="grid">{% for a in library %}{{ card(a) }}{% else %}<p class="muted">No library articles for this topic.</p>{% endfor %}</div>
+</section>
+
+<p class="muted small">Ads are matched to the page topic only. Her Aura never shares your health data with advertisers.</p>
+{% endblock %}

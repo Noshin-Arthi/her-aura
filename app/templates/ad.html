@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Sponsored - Her Aura{% endblock %}
+{% block content %}
+<section class="card ad-frame" id="ad-frame">
+  <p class="muted small">Advertisement · demo placeholder</p>
+  <h2>Your ad could be here</h2>
+  <p>In the live app, a contextual ad network fills this space with an ad related to the article's topic
+     (<em>{{ article.topic }}</em>), never based on your health data.</p>
+  <p id="ad-countdown" aria-live="polite" data-seconds="{{ seconds }}">Your article unlocks in <strong>{{ seconds }}</strong> seconds…</p>
+  <form method="post" action="/learn/{{ article.slug }}/ad/claim">
+    <button type="submit" id="btn-claim" disabled>Unlock "{{ article.title }}"</button>
+  </form>
+  <p class="small"><a href="/learn">Skip and go back</a> · <a href="/premium">No ads with Premium</a></p>
+</section>
+<script>
+(function () {
+  const box = document.getElementById('ad-countdown'), btn = document.getElementById('btn-claim');
+  let left = +box.dataset.seconds;
+  const tick = () => {
+    if (left <= 0) { clearInterval(id); box.textContent = 'Thanks for watching!'; btn.disabled = false; return; }
+    box.querySelector('strong').textContent = left--;
+  };
+  const id = setInterval(tick, 1000);
+  tick();
+})();
+</script>
+{% endblock %}

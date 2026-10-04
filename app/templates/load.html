@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% block title %}Emotional load - Her Aura{% endblock %}
+{% block content %}
+<h1>Emotional load</h1>
+<p class="lead">How are you, really? A one-minute daily check-in on your mood, stress, energy and the invisible work you carry.</p>
+{% if saved %}<div class="alert success" id="success-message">Check-in saved. Thank you for taking a minute for yourself.</div>{% endif %}
+
+<div class="grid load-grid">
+  <form method="post" action="/load" id="load-form" class="card form">
+    <h2>Today's check-in</h2>
+    <label for="load_date">Date</label>
+    <input id="load_date" name="log_date" type="date" value="{{ today }}" max="{{ today }}" required>
+    <div class="number-row">
+      <label for="mood">Mood (1 low - 5 great)<input id="mood" name="mood" type="number" inputmode="numeric" min="1" max="5" value="3" required></label>
+      <label for="stress">Stress (1 calm - 10 overwhelmed)<input id="stress" name="stress" type="number" inputmode="numeric" min="1" max="10" value="5" required></label>
+      <label for="energy">Energy (1 drained - 5 full)<input id="energy" name="energy" type="number" inputmode="numeric" min="1" max="5" value="3" required></label>
+    </div>
+    <span class="label">What's weighing on you? (tap all that apply)</span>
+    <div class="chips">
+      {% for key, text in areas.items() %}
+      <label class="chip"><input type="checkbox" name="areas" value="{{ key }}" id="area-{{ key }}"> {{ text }}</label>
+      {% endfor %}
+    </div>
+    <label for="handoff">One thing I could hand off, postpone or drop (optional)</label>
+    <input id="handoff" name="handoff" maxlength="300" placeholder="e.g. planning this week's meals">
+    <details><summary>Write more (optional, private)</summary>
+      <textarea id="load_notes" name="notes" maxlength="1000" rows="3"></textarea></details>
+    <button type="submit" id="btn-save-load">Save check-in</button>
+  </form>
+
+  <section class="card" id="load-insights">
+    <h2>Last 14 days</h2>
+    {% if insight.checkins %}
+      <div class="stats">
+        <p>Mood <strong id="avg-mood">{{ insight.avg_mood }}</strong>/5</p>
+        <p>Stress <strong id="avg-stress">{{ insight.avg_stress }}</strong>/10
+          {% if insight.prev_avg_stress is not none %}<span class="muted small" id="stress-trend">(before: {{ insight.prev_avg_stress }})</span>{% endif %}</p>
+        <p>Energy <strong id="avg-energy">{{ insight.avg_energy }}</strong>/5</p>
+      </div>
+      <p class="muted small">{{ insight.checkins }} check-ins · {{ insight.high_stress_days }} high-stress days · {{ insight.low_mood_days }} low-mood days</p>
+      {% if insight.top_areas %}
+      <h3>Where your load comes from</h3>
+      <ul id="top-areas">{% for a in insight.top_areas %}<li data-testid="top-area" data-area="{{ a.key }}">{{ a.label }}: {{ a.days }} days</li>{% endfor %}</ul>
+      {% endif %}
+      {% if insight.phase %}
+      <p id="phase-insight">Your average stress in the week before your period: <strong>{{ insight.phase.pre_period_stress }}</strong>,
+        other days: <strong>{{ insight.phase.other_stress }}</strong>.</p>
+      {% endif %}
+    {% else %}
+      <p class="muted" id="no-checkins">Check in for a few days to see your patterns.</p>
+    {% endif %}
+  </section>
+</div>
+
+{% if insight.suggestions %}
+<section id="load-suggestions">
+  <h2>For you</h2>
+  {% for s in insight.suggestions %}
+  <article class="suggestion {{ 'soon' if s.level == 'important' else 'routine' }}" data-testid="load-suggestion" data-kind="{{ s.kind }}">
+    <p>{{ s.text }}</p>
+    {% if s.link %}<a href="{{ s.link }}">{{ s.link_text }}</a>{% endif %}
+  </article>
+  {% endfor %}
+</section>
+{% endif %}
+
+<section class="card support" id="support-line"><p><strong>Need to talk to someone now?</strong> {{ insight.support_line }}</p></section>
+
+{% if history %}
+<details class="card"><summary>Recent check-ins</summary>
+  <table id="load-table"><thead><tr><th>Date</th><th>Mood</th><th>Stress</th><th>Energy</th><th>Load</th><th>Could hand off</th></tr></thead>
+  <tbody>{% for c in history %}
+    <tr data-testid="load-row" data-date="{{ c.log_date }}"><td>{{ c.log_date }}</td><td>{{ c.mood }}</td><td>{{ c.stress }}</td><td>{{ c.energy }}</td>
+      <td>{% for a in parse_areas(c.areas) %}{{ areas[a] }}{% if not loop.last %}, {% endif %}{% endfor %}</td><td>{{ c.handoff }}</td></tr>
+  {% endfor %}</tbody></table>
+</details>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Daily log - Her Aura{% endblock %}
+{% block content %}
+<h1>Daily log</h1>
+
+<form method="post" action="/log/same-as-yesterday" class="quick-action">
+  <button type="submit" class="secondary" id="btn-same-as-yesterday">Same as yesterday</button>
+  <span class="muted small">Copies yesterday's flow, pain and symptoms to today.</span>
+</form>
+
+<form method="post" action="/log" id="log-form" class="card form">
+  <label for="log_date">Date</label>
+  <input id="log_date" name="log_date" type="date" value="{{ today }}" max="{{ today }}" required>
+
+  <span class="label">Period flow</span>
+  <div class="chips" role="radiogroup" aria-label="Period flow">
+    {% for value, text in [("none", "None"), ("light", "Light"), ("medium", "Medium"), ("heavy", "Heavy")] %}
+    <label class="chip"><input type="radio" name="period_flow" id="flow-{{ value }}" value="{{ value }}" {% if value == "none" %}checked{% endif %}> {{ text }}</label>
+    {% endfor %}
+  </div>
+
+  <label for="pain_level">Pain level (0 = none, 10 = worst)</label>
+  <input id="pain_level" name="pain_level" type="number" inputmode="numeric" min="0" max="10" value="0" required>
+
+  <label for="bbt_celsius">Basal body temperature, °C (optional, measured on waking)</label>
+  <input id="bbt_celsius" name="bbt_celsius" type="number" inputmode="decimal" step="0.01" min="35" max="38.5" placeholder="36.45">
+  <p class="muted small">Used to confirm ovulation after it happens. Not a contraceptive.</p>
+
+  <span class="label">Symptoms today (tap all that apply)</span>
+  <div class="chips">
+    <label class="chip"><input type="checkbox" id="pelvic_or_abdominal_pain" name="pelvic_or_abdominal_pain" value="true"> Pelvic / abdominal pain</label>
+    <label class="chip"><input type="checkbox" id="bloating" name="bloating" value="true"> Bloating</label>
+    <label class="chip"><input type="checkbox" id="early_fullness" name="early_fullness" value="true"> Feeling full quickly</label>
+    <label class="chip"><input type="checkbox" id="urinary_urgency" name="urinary_urgency" value="true"> Urinary urgency</label>
+  </div>
+
+  <details>
+    <summary>Add a note (optional)</summary>
+    <textarea id="notes" name="notes" maxlength="1000" rows="3"></textarea>
+  </details>
+
+  <button type="submit" id="btn-save-log">Save log</button>
+</form>
+{% endblock %}

@@ -1,0 +1,147 @@
+{% extends "base.html" %}
+{% block content %}
+<section class="hero">
+  <div class="hero-copy reveal">
+    <p class="eyebrow">Your personal health record</p>
+    <h1>Know when to see a doctor, <span class="accent">and which one.</span></h1>
+    <p class="lead">Log headaches, toothaches, rashes, hair fall, tiredness and more in seconds.
+      Her Aura keeps your history, spots patterns over time and points you to the right specialist.</p>
+    <div class="actions">
+      <a class="button" href="/register" id="link-register">Create free account</a>
+      <a class="button secondary" href="/login" id="link-login">Log in</a>
+    </div>
+    <ul class="trust" id="trust-points">
+      <li>Your logs are private to your account</li>
+      <li>Every suggestion explains why</li>
+      <li>A tracking tool, not a diagnosis</li>
+    </ul>
+  </div>
+
+  <div class="device reveal" id="try-it" aria-labelledby="try-it-title">
+    <p class="device-bar"><span></span><span></span><span></span></p>
+    <h2 id="try-it-title">Try it, no account needed</h2>
+    <p class="muted small">Pick what you've been feeling. Nothing is saved.</p>
+
+    <div class="chips" id="demo-categories">
+      {% for key, (text, _, _) in categories.items() if key != "other" %}
+      <label class="chip"><input type="checkbox" name="demo-category" value="{{ key }}" id="demo-{{ key }}"> {{ text }}</label>
+      {% endfor %}
+    </div>
+
+    <div class="number-row">
+      <label for="demo-severity">How bad? (1-10)
+        <input id="demo-severity" type="number" inputmode="numeric" min="1" max="10" value="5"></label>
+      <label for="demo-days">Days out of the last 14
+        <input id="demo-days" type="number" inputmode="numeric" min="1" max="14" value="1"></label>
+    </div>
+
+    <div id="demo-result" class="demo-result" aria-live="polite">
+      <p class="muted" id="demo-empty">Choose at least one symptom to see a suggestion.</p>
+    </div>
+  </div>
+</section>
+
+<section class="steps reveal" aria-label="How it works">
+  <article class="step"><span class="step-no">1</span><h3>Log in seconds</h3>
+    <p>Tap what you feel, slide the severity, done. Your history builds up day by day.</p></article>
+  <article class="step"><span class="step-no">2</span><h3>See patterns, with reasons</h3>
+    <p>Severe today, or coming back again and again? Her Aura tells you, and shows exactly which logs it's based on.</p></article>
+  <article class="step"><span class="step-no">3</span><h3>Book the right specialist</h3>
+    <p>Go straight from a suggestion to doctors of that specialty, call the clinic or book a slot.</p></article>
+</section>
+
+<section class="specialties reveal" id="specialty-preview">
+  <h2>Specialists you can book</h2>
+  <div class="chips">
+    {% for specialty, count in specialty_counts %}
+    <a class="chip link-chip" href="/register" data-testid="specialty-chip">{{ specialty }} <span class="count">{{ count }}</span></a>
+    {% endfor %}
+  </div>
+  <p class="muted small">Demo data: all doctors and clinics shown are fictional.</p>
+</section>
+
+<section class="modules reveal" id="modules">
+  <h2>Built around your whole cycle</h2>
+  <div class="grid">
+    <article class="card"><h3>Cycle and temperature</h3>
+      <p>Log flow, pain and symptoms. Add your morning temperature to see, after the fact, when ovulation likely happened. A tracking tool, not birth control.</p></article>
+    <article class="card"><h3>Sleep</h3>
+      <p>Log your nights and get wind-down routines. Many people sleep worse in the week before their period, so Her Aura gives you a heads-up then.</p></article>
+    <article class="card"><h3>Mind</h3>
+      <p>A 7-day beginner mindfulness course, a few minutes a day, one new skill at a time. Small studies link mindfulness training to fewer premenstrual symptoms.</p></article>
+    <article class="card"><h3>Fitness <span class="muted small">(coming soon)</span></h3>
+      <p>Log runs, rides and outdoor workouts, and set weekly goals.</p></article>
+  </div>
+</section>
+
+<script>
+(function () {
+  const sev = document.getElementById('demo-severity'), days = document.getElementById('demo-days');
+  const result = document.getElementById('demo-result');
+  let timer;
+
+  function selected() {
+    return [...document.querySelectorAll('input[name="demo-category"]:checked')].map(i => i.value);
+  }
+
+  function render(data) {
+    result.replaceChildren();
+    if (!data.suggestions.length) {
+      const p = document.createElement('p');
+      p.id = 'demo-none';
+      p.textContent = 'Nothing to flag yet. Keep logging: patterns show up over time.';
+      result.append(p);
+    }
+    for (const s of data.suggestions) {
+      const card = document.createElement('article');
+      card.className = 'suggestion ' + s.urgency;
+      card.setAttribute('data-testid', 'demo-suggestion');
+      card.dataset.urgency = s.urgency;
+      const title = document.createElement('p');
+      const strong = document.createElement('strong');
+      strong.textContent = (s.urgency === 'soon' ? 'See a doctor soon: ' : 'Consider a visit: ') + s.specialty;
+      title.append(strong);
+      const why = document.createElement('p');
+      why.className = 'small';
+      why.textContent = s.reason;
+      card.append(title, why);
+      result.append(card);
+    }
+    const note = document.createElement('p');
+    note.className = 'muted small';
+    note.textContent = data.disclaimer;
+    result.append(note);
+  }
+
+  async function update() {
+    const categories = selected();
+    if (!categories.length) {
+      result.innerHTML = '<p class="muted" id="demo-empty">Choose at least one symptom to see a suggestion.</p>';
+      return;
+    }
+    const clamp = (el, lo, hi) => Math.min(hi, Math.max(lo, parseInt(el.value, 10) || lo));
+    const issues = categories.map(c => ({ category: c, severity: clamp(sev, 1, 10), days: clamp(days, 1, 14) }));
+    try {
+      const res = await fetch('/api/suggestions/preview', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ issues })
+      });
+      if (!res.ok) throw new Error(res.status);
+      render(await res.json());
+    } catch (e) {
+      result.innerHTML = '<p class="alert error" id="demo-error">Could not load a suggestion. Please try again.</p>';
+    }
+  }
+
+  function debounced() { clearTimeout(timer); timer = setTimeout(update, 150); }
+  document.getElementById('try-it').addEventListener('input', debounced);
+
+  // Fade sections in as they scroll into view (skipped when the user prefers reduced motion).
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches && 'IntersectionObserver' in window) {
+    const io = new IntersectionObserver(entries => entries.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
+    }), { threshold: 0.1 });
+    document.querySelectorAll('.reveal').forEach(el => { el.classList.add('will-reveal'); io.observe(el); });
+  }
+})();
+</script>
+{% endblock %}

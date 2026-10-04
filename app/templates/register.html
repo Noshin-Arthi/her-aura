@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}Create account - Her Aura{% endblock %}
+{% block content %}
+<h1>Create account</h1>
+<form method="post" action="/register" id="register-form" class="card form">
+  <label for="full_name">Full name</label>
+  <input id="full_name" name="full_name" value="{{ full_name or '' }}" required>
+  <label for="email">Email</label>
+  <input id="email" name="email" type="email" value="{{ email or '' }}" required>
+  <label for="password">Password (min 8 characters)</label>
+  <input id="password" name="password" type="password" minlength="8" required>
+  <button type="submit" id="btn-register">Create account</button>
+</form>
+<p>Already registered? <a href="/login">Log in</a></p>
+{% endblock %}

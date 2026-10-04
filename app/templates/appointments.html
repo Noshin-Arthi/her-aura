@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Appointments - Her Aura{% endblock %}
+{% block content %}
+<h1>My appointments</h1>
+{% if booked %}<div class="alert success" id="success-message">Appointment booked.</div>{% endif %}
+{% if appointments %}
+<table id="appointments-table">
+  <thead><tr><th>When</th><th>Doctor</th><th>Clinic</th><th>Reason</th><th>Status</th><th></th></tr></thead>
+  <tbody>
+  {% for a in appointments %}
+    <tr data-testid="appointment-row" data-appointment-id="{{ a.id }}">
+      <td>{{ a.slot.starts_at.strftime('%a %d %b, %I:%M %p') }}</td>
+      <td data-testid="appointment-doctor">{{ a.slot.doctor.full_name }}</td>
+      <td>{{ a.slot.doctor.clinic.name }}</td>
+      <td>{{ a.reason }}</td>
+      <td data-testid="appointment-status">{{ a.status }}</td>
+      <td>{% if a.status == 'booked' %}
+        <form method="post" action="/appointments/{{ a.id }}/cancel" class="inline">
+          <button class="secondary" data-testid="btn-cancel">Cancel</button>
+        </form>{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p id="empty-appointments">No appointments yet. <a href="/doctors">Find a doctor</a>.</p>
+{% endif %}
+{% endblock %}

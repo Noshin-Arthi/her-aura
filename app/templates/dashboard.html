@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Her Aura{% endblock %}
+{% block content %}
+<h1 id="dashboard-heading">Hello, {{ user.full_name }}</h1>
+{% if request.query_params.get('saved') %}<div class="alert success" id="success-message">Log saved.</div>{% endif %}
+
+<div class="actions">
+  <a class="button" href="/health" id="btn-log-issue">Log how I feel</a>
+  <a class="button secondary" href="/log" id="btn-log-cycle">Log cycle</a>
+</div>
+
+<section class="card" id="suggestions-card">
+  <h2>Suggestions for you</h2>
+  {% if suggestions %}
+    {% for s in suggestions %}
+    <article class="suggestion {{ s.urgency }}" data-testid="suggestion" data-category="{{ s.category }}" data-urgency="{{ s.urgency }}">
+      <p><strong>{% if s.urgency == 'soon' %}See a doctor soon{% else %}Consider a visit{% endif %}: {{ s.specialty }}</strong></p>
+      <p data-testid="suggestion-reason">{{ s.reason }}</p>
+      {% if s.tips %}<ul class="small">{% for tip in s.tips %}<li>{{ tip }}</li>{% endfor %}</ul>{% endif %}
+      <a href="/doctors?specialty={{ s.specialty | urlencode }}" data-testid="suggestion-find-doctor">Find a {{ s.specialty }} doctor</a>
+    </article>
+    {% endfor %}
+  {% else %}
+    <p id="no-suggestions" class="muted">Nothing to flag right now. Keep logging how you feel.</p>
+  {% endif %}
+  <p class="muted small" id="emergency-note">{{ emergency_note }}</p>
+</section>
+
+<section class="card">
+  <h2>Recent health issues</h2>
+  {% if issues %}
+  <table id="issues-table">
+    <thead><tr><th>Date</th><th>Issue</th><th>Severity</th><th>Notes</th></tr></thead>
+    <tbody>
+    {% for i in issues %}
+      <tr data-testid="issue-row" data-category="{{ i.category }}">
+        <td>{{ i.log_date }}</td><td>{{ label(i.category) }}</td><td>{{ i.severity }}/10</td><td>{{ i.notes }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p id="empty-issues">Nothing logged yet. <a href="/health">Log how you feel</a>.</p>
+  {% endif %}
+</section>
+
+<section class="card {% if insight.red_flag %}flag{% endif %}" id="insight-card" data-red-flag="{{ 'true' if insight.red_flag else 'false' }}">
+  <h2>Cycle tracking</h2>
+  <p id="insight-message">{{ insight.message }}</p>
+  <div id="goff-progress" class="progress-block">
+    <p>Symptom days: <strong id="symptom-days">{{ insight.symptom_days }}</strong> of last {{ insight.window_days }}</p>
+    <progress id="symptom-days-bar" max="{{ insight.window_days }}" value="{{ insight.symptom_days }}"
+              aria-label="Symptom days in the last {{ insight.window_days }} days"></progress>
+    <details id="goff-explainer">
+      <summary>How is this calculated?</summary>
+      <p class="small">We count the days in the last {{ insight.window_days }} on which you logged pelvic or abdominal pain,
+        bloating, or feeling full quickly. Research (the Goff symptom index) suggests that having these on
+        {{ insight.threshold_days }} or more days a month is a reason to talk to a gynecologist. It is a prompt to get checked, not a diagnosis.</p>
+    </details>
+  </div>
+  <p class="muted">Days logged: <span id="days-logged">{{ insight.days_logged }}</span>
+    {% if insight.average_cycle_length %} · Average cycle: <span id="avg-cycle">{{ insight.average_cycle_length }}</span> days{% endif %}</p>
+  <div id="cycle-status" class="small">
+    {% if cycle.next_period %}<p>Next period expected around <strong id="next-period">{{ cycle.next_period.strftime('%d %b') }}</strong>{% if cycle.late_luteal %} · <span id="late-luteal">pre-period week</span>{% endif %}</p>{% endif %}
+    {% if cycle.ovulation_confirmed_from %}<p id="ovulation-confirmed">Temperature rise from <strong>{{ cycle.ovulation_confirmed_from.strftime('%d %b') }}</strong>: ovulation likely happened just before this.</p>
+    {% elif cycle.bbt_readings %}<p id="ovulation-pending">{{ cycle.bbt_readings }} temperature reading(s) this cycle. No sustained rise yet.</p>{% endif %}
+    {% if cycle.bbt_readings %}<p class="muted" id="not-contraception">{{ cycle.not_contraception }}</p>{% endif %}
+  </div>
+  <p class="muted small" id="insight-disclaimer">{{ insight.disclaimer }}</p>
+  {% if insight.red_flag %}<a class="button" href="/doctors?specialty=Gynecology" id="btn-find-doctor">Find a gynecologist</a>{% endif %}
+
+  {% if logs %}
+  <details>
+    <summary>Recent cycle logs</summary>
+    <table id="logs-table">
+      <thead><tr><th>Date</th><th>Flow</th><th>Pain</th><th>Symptoms</th></tr></thead>
+      <tbody>
+      {% for log in logs %}
+        <tr data-testid="log-row" data-date="{{ log.log_date }}">
+          <td>{{ log.log_date }}</td><td>{{ log.period_flow }}</td><td>{{ log.pain_level }}/10</td>
+          <td>{% if log.pelvic_or_abdominal_pain %}pain {% endif %}{% if log.bloating %}bloating {% endif %}{% if log.early_fullness %}early fullness {% endif %}{% if log.urinary_urgency %}urinary {% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </details>
+  {% endif %}
+</section>
+{% endblock %}

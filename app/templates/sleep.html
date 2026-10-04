@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Sleep - Her Aura{% endblock %}
+{% block content %}
+<h1>Sleep</h1>
+{% if saved %}<div class="alert success" id="success-message">Sleep saved.</div>{% endif %}
+{% if late_luteal %}<div class="alert tip" id="late-luteal-tip">{{ tip }}</div>{% endif %}
+
+<div class="grid">
+  <form method="post" action="/sleep" id="sleep-form" class="card form">
+    <h2>Log last night</h2>
+    <label for="sleep_date">Morning of</label>
+    <input id="sleep_date" name="log_date" type="date" value="{{ today }}" max="{{ today }}" required>
+    <label for="hours">Hours slept</label>
+    <input id="hours" name="hours" type="number" inputmode="decimal" step="0.5" min="0" max="24" value="7" required>
+    <label for="quality">Quality (1 = very poor, 5 = very good)</label>
+    <input id="quality" name="quality" type="number" inputmode="numeric" min="1" max="5" value="3" required>
+    <label for="sleep_notes">Notes (optional)</label>
+    <input id="sleep_notes" name="notes" maxlength="500" placeholder="Woke at 3am, cramps...">
+    <button type="submit" id="btn-save-sleep">Save</button>
+  </form>
+
+  <section class="card" id="sleep-summary">
+    <h2>Last 7 nights</h2>
+    {% if summary.nights %}
+      <p>Average <strong id="avg-hours">{{ summary.avg_hours }}</strong> hours · quality <strong id="avg-quality">{{ summary.avg_quality }}</strong>/5
+        <span class="muted">({{ summary.nights }} nights logged)</span></p>
+      <table id="sleep-table">
+        <thead><tr><th>Date</th><th>Hours</th><th>Quality</th><th>Notes</th></tr></thead>
+        <tbody>{% for n in nights %}
+          <tr data-testid="sleep-row" data-date="{{ n.log_date }}"><td>{{ n.log_date }}</td><td>{{ n.hours }}</td><td>{{ n.quality }}/5</td><td>{{ n.notes }}</td></tr>
+        {% endfor %}</tbody>
+      </table>
+    {% else %}
+      <p class="muted" id="no-sleep">No nights logged yet.</p>
+    {% endif %}
+  </section>
+</div>
+
+<section id="wind-down">
+  <h2>Wind down tonight</h2>
+  <div class="grid">
+    {% for item in wind_down %}
+    <article class="card" data-testid="wind-down-item">
+      <h3>{{ item.title }} <span class="muted small">· {{ item.minutes }} min</span></h3>
+      <p>{{ item.text }}</p>
+    </article>
+    {% endfor %}
+  </div>
+</section>
+{% endblock %}
