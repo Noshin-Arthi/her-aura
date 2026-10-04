@@ -5,6 +5,7 @@ services:
     name: her-aura
     runtime: python
     plan: free
+    region: ohio                     # same region as the Neon database (AWS US East 2), for fast queries
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     healthCheckPath: /healthz
