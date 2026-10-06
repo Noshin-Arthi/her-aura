@@ -16,6 +16,8 @@ and **which** specialist, lets you book them, and supports your cycle, sleep and
 
 > Her Aura is not a medical device. All doctors and clinics in the demo data are fictional.
 
+**Start here:** [docs/KNOWLEDGE_BASE.md](docs/KNOWLEDGE_BASE.md) explains the business case, requirements, architecture, tests and AI agents, with diagrams.
+
 ## What this repo demonstrates
 
 | Skill | Where |
