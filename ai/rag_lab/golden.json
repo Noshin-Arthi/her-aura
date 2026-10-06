@@ -1,0 +1,10 @@
+[
+  {"question": "How many ad unlocks can a free user get per day?", "expected_source": "docs/REQUIREMENTS.md", "expected_text": "3 per day"},
+  {"question": "What symptom frequency triggers the red-flag warning in cycle tracking?", "expected_source": "docs/REQUIREMENTS.md", "expected_text": "12"},
+  {"question": "Why is Her Aura not a digital contraceptive?", "expected_source": "docs/ROADMAP.md", "expected_text": "medical device"},
+  {"question": "Where is the Postgres database hosted?", "expected_source": "docs/HOSTING.md", "expected_text": "Neon"},
+  {"question": "What does the failure triage agent never do?", "expected_source": "ai/README.md", "expected_text": "never edits code"},
+  {"question": "How long before an appointment can a patient still cancel?", "expected_source": "docs/REQUIREMENTS.md", "expected_text": "2 hours"},
+  {"question": "Which test proves that double booking is impossible?", "expected_source": "docs/TEST_STRATEGY.md", "expected_text": "test_concurrent_booking"},
+  {"question": "What is the Kaan Pete Roi helpline number?", "expected_source": "docs/REQUIREMENTS.md", "expected_text": "09612-119911"}
+]
