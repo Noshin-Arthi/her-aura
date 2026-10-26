@@ -1,5 +1,6 @@
 """Server-rendered HTML pages. Every interactive element has a stable id or data-testid for automation."""
 
+import hashlib
 from datetime import date, datetime
 
 from pathlib import Path
@@ -45,6 +46,9 @@ from app.services.scheduling import BookingError, book_slot, cancel_appointment
 router = APIRouter()
 
 templates = Jinja2Templates(directory=str(Path(__file__).resolve().parent.parent / "templates"))
+# Changes whenever style.css changes, so browsers fetch the new file instead of reusing an old cached copy.
+templates.env.globals["css_version"] = hashlib.sha256(
+    (Path(__file__).resolve().parent.parent / "static" / "style.css").read_bytes()).hexdigest()[:10]
 
 
 
