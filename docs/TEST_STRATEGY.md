@@ -71,6 +71,20 @@ flowchart TB
 | US-32 AC1-6 | `tests/unit/test_emotional_load.py` (9 vs 10 low-mood days, stress 6 vs 7, ordering, top areas, phase comparison needs 3+3), `test_learn_and_load_api.py` (round trip, validation, one per day, insights, private), `learn-and-load.spec.ts` (check-in → insights, support line) |
 | US-21 AC1-5 | `tests/api/test_nearby_and_reviews_api.py` (profile, review after past visit, future/cancelled/twice/wrong doctor rejected, someone else's visit, rating 0/6, idempotent seeding), `e2e/tests/nearby.spec.ts` (profile + sample badges, future visit in history not rateable) |
 | US-22 AC1-6 | `tests/unit/test_geo_and_osm.py` (haversine known values, weighted rating, ranking both modes, coordinate rounding, OSM parsing/dedupe, specialty matching, no health words in the query, mirror fallback, all servers down), `test_nearby_and_reviews_api.py` (both lists, radius, sorts, validation, provider failure), `nearby.spec.ts` (geolocation emulation, sort, typed area, specialty filter) |
+| US-33 AC1 | `tests/unit/test_period_dates.py::test_log_period_with_end_date`, `test_cycle_page_saves_period_dates` (form post → 303, period row on the page, start/end/length from `/api/cycle/status`) |
+| US-33 AC2 | `test_ongoing_period_runs_until_today_then_end_date_trims_it`. "Ongoing" label on the page: TODO |
+| US-33 AC3 | `test_existing_daily_log_keeps_its_flow_and_symptoms` |
+| US-33 AC4 | `test_invalid_period_dates_rejected` (end before start, future end, 16 days), `test_fifteen_day_period_is_allowed` (15 days). Future start date: TODO |
+| US-33 AC5 | `test_consecutive_flow_days_form_one_period` (2 periods, average 4.5 days), `test_days_without_flow_are_ignored`, `test_cycle_page_saves_period_dates` |
+| US-33 AC6 | `test_old_log_url_redirects_to_cycle_tracker` (301 to `/cycle`), `symptom-log.spec.ts` (page object opens `/cycle`) |
+| US-33 AC7 | TODO (exercise: user B posts a period, user A's `/api/cycle/status` and `/cycle` stay empty) |
+| US-33 UI journey | TODO (exercise: Playwright spec that logs a period on `/cycle` and checks the "Your periods" row) |
+| US-34 AC1 | `auth.spec.ts` "new user can register and lands on the dashboard" (heading "Hello, name"), `home.spec.ts` "logged-in users skip the landing page" |
+| US-34 AC2 | `test_period_dates.py::test_cycle_phase` (4 phases), `tests/unit/test_cycle.py` (next period, pre-period week). Cycle card on the page: TODO |
+| US-34 AC3 | TODO (exercise: each tile and menu link opens the right page; `aria-current="page"` on the active link) |
+| US-34 AC4 | Rules: `test_wellbeing.py::test_sleep_summary_*`, `test_emotional_load.py`, `test_wellbeing.py` (programme). Cards and empty states on Home: TODO |
+| US-34 AC5 | TODO (exercise: a cancelled appointment and another user's booking never show in the card) |
+| US-34 AC6 | `insights.spec.ts` (counter, explainer, disclaimer), `health-issues.spec.ts` (suggestions, emergency guidance on the dashboard) |
 | US-03 AC2 (UI) | `symptom-log.spec.ts` "future date is blocked by the form" (browser validation) + API test for the server check |
 
 ## Flaky-test policy

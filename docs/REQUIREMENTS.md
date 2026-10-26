@@ -183,3 +183,22 @@ As a user, I want to notice how I feel and what I'm carrying, so I can ask for h
 - AC4: With cycle data (3+ check-ins in each group), stress in the pre-period week is compared with other days.
 - AC5: Crisis support is always visible: 999, Kaan Pete Roi (09612-119911, 3pm-3am), findahelpline.com.
 - AC6: Check-ins are private to the user.
+
+## US-33 Period start and end dates (Done)
+As a user, I want to log when my period starts and ends, so I can see how long my periods last and when the next one is due.
+- AC1: On the Cycle tracker (`/cycle`) I can log a period with a start date, an optional end date and a usual flow (light, medium, heavy). It appears under "Your periods" with its start, end and length in days.
+- AC2: If I leave the end date empty, the period is ongoing: it counts until today and shows "Ongoing". When I add the end date later, the days after the end date lose their flow.
+- AC3: Days I already logged inside the period keep their own flow and symptoms.
+- AC4: A start or end date in the future, an end date before the start date, or a period longer than 15 days is rejected with a clear message. Exactly 15 days is allowed.
+- AC5: A period is a run of consecutive days with flow. The summary shows my last period (start to end), average period length, average cycle length and the expected next period.
+- AC6: The old address `/log` redirects to `/cycle`, so old links and bookmarks still work.
+- AC7: I can never see or change another user's periods.
+
+## US-34 Home dashboard (Done)
+As a user, I want one home screen that shows where I am in my cycle and how I am doing, with every part of Her Aura one tap away.
+- AC1: After logging in I land on Home, which greets me by name ("Hello, <full name>").
+- AC2: A cycle card shows my cycle day and phase (Period, Pre-period week, Period due or Between periods), my next expected period and my last period's dates. With no periods logged, it asks me to log my last period.
+- AC3: Tiles link to every section, and the main menu uses the same clear names (Home, Cycle tracker, Symptoms, Sleep, Mindfulness, Emotional load, Health library, Find a doctor, My appointments). The menu highlights the page I am on.
+- AC4: Cards show my sleep (7-night average), mood and stress (last 14 days), mindfulness progress (days done of 7) and my next appointment. Each card has an empty state and a link to its section.
+- AC5: The next appointment card shows only my own upcoming, booked appointment, never a cancelled or past one.
+- AC6: Suggestions with emergency guidance, recent symptoms, the cycle health check (red-flag counter) and the disclaimer are still shown on Home.
