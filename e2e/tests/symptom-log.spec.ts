@@ -25,7 +25,7 @@ test.describe('Symptom log @mobile', () => {
     expect(await pages.symptomLog.dateIsInvalid()).toBe(true);
 
     await pages.symptomLog.save.click();
-    await expect(page).toHaveURL(/\/log$/);   // browser refused to submit
+    await expect(page).toHaveURL(/\/cycle$/);   // browser refused to submit
     // The server also rejects it if the form is bypassed: see tests/api/test_logs_api.py::test_future_date_rejected
   });
 

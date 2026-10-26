@@ -33,6 +33,11 @@ export default defineConfig({
     cwd: path.resolve(__dirname, '..'),
     url: `http://127.0.0.1:${PORT}/healthz`,
     reuseExistingServer: !process.env.CI,
-    env: { DATABASE_URL: 'sqlite:///./e2e.db', SECRET_KEY: 'e2e-secret', AD_SECONDS: '2' },  // short ads keep tests fast
+    env: {
+      DATABASE_URL: 'sqlite:///./e2e.db', SECRET_KEY: 'e2e-secret',
+      AD_SECONDS: '2',                                             // short ads keep tests fast
+      OSM_FIXTURE: path.resolve(__dirname, '..', 'tests', 'fixtures', 'overpass_dhaka.json'),        // no real map calls
+      NOMINATIM_FIXTURE: path.resolve(__dirname, '..', 'tests', 'fixtures', 'nominatim_dhanmondi.json'),
+    },
   },
 });

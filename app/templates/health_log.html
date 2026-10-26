@@ -1,7 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Log a health issue - Her Aura{% endblock %}
 {% block content %}
-<h1>How are you feeling?</h1>
+<header class="page-head">
+  <p class="eyebrow">Symptom log</p>
+  <h1>How are you feeling?</h1>
+</header>
 <form method="post" action="/health" id="health-form" class="card form">
   <label for="health_date">Date</label>
   <input id="health_date" name="log_date" type="date" value="{{ today }}" max="{{ today }}" required>
@@ -21,7 +24,7 @@
     <textarea id="health_notes" name="notes" maxlength="1000" rows="3" placeholder="Where, since when, what helps or makes it worse"></textarea>
   </details>
 
-  <button type="submit" id="btn-save-issue">Save</button>
+  <button type="submit" id="btn-save-issue">Save symptom</button>
 </form>
-<p class="muted small">Period tracking lives under <a href="/log">Cycle</a>.</p>
+<p class="muted small">Tracking your period? Use the <a href="/cycle">Cycle tracker</a>.</p>
 {% endblock %}

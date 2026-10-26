@@ -1,89 +1,180 @@
-{% extends "base.html" %}
-{% block title %}Dashboard - Her Aura{% endblock %}
-{% block content %}
-<h1 id="dashboard-heading">Hello, {{ user.full_name }}</h1>
-{% if request.query_params.get('saved') %}<div class="alert success" id="success-message">Log saved.</div>{% endif %}
-
-<div class="actions">
-  <a class="button" href="/health" id="btn-log-issue">Log how I feel</a>
-  <a class="button secondary" href="/log" id="btn-log-cycle">Log cycle</a>
-</div>
-
-<section class="card" id="suggestions-card">
-  <h2>Suggestions for you</h2>
-  {% if suggestions %}
-    {% for s in suggestions %}
-    <article class="suggestion {{ s.urgency }}" data-testid="suggestion" data-category="{{ s.category }}" data-urgency="{{ s.urgency }}">
-      <p><strong>{% if s.urgency == 'soon' %}See a doctor soon{% else %}Consider a visit{% endif %}: {{ s.specialty }}</strong></p>
-      <p data-testid="suggestion-reason">{{ s.reason }}</p>
-      {% if s.tips %}<ul class="small">{% for tip in s.tips %}<li>{{ tip }}</li>{% endfor %}</ul>{% endif %}
-      <a href="/doctors?specialty={{ s.specialty | urlencode }}" data-testid="suggestion-find-doctor">Find a {{ s.specialty }} doctor</a>
-    </article>
-    {% endfor %}
-  {% else %}
-    <p id="no-suggestions" class="muted">Nothing to flag right now. Keep logging how you feel.</p>
-  {% endif %}
-  <p class="muted small" id="emergency-note">{{ emergency_note }}</p>
-</section>
-
-<section class="card">
-  <h2>Recent health issues</h2>
-  {% if issues %}
-  <table id="issues-table">
-    <thead><tr><th>Date</th><th>Issue</th><th>Severity</th><th>Notes</th></tr></thead>
-    <tbody>
-    {% for i in issues %}
-      <tr data-testid="issue-row" data-category="{{ i.category }}">
-        <td>{{ i.log_date }}</td><td>{{ label(i.category) }}</td><td>{{ i.severity }}/10</td><td>{{ i.notes }}</td>
-      </tr>
-    {% endfor %}
-    </tbody>
-  </table>
-  {% else %}
-  <p id="empty-issues">Nothing logged yet. <a href="/health">Log how you feel</a>.</p>
-  {% endif %}
-</section>
-
-<section class="card {% if insight.red_flag %}flag{% endif %}" id="insight-card" data-red-flag="{{ 'true' if insight.red_flag else 'false' }}">
-  <h2>Cycle tracking</h2>
-  <p id="insight-message">{{ insight.message }}</p>
-  <div id="goff-progress" class="progress-block">
-    <p>Symptom days: <strong id="symptom-days">{{ insight.symptom_days }}</strong> of last {{ insight.window_days }}</p>
-    <progress id="symptom-days-bar" max="{{ insight.window_days }}" value="{{ insight.symptom_days }}"
-              aria-label="Symptom days in the last {{ insight.window_days }} days"></progress>
-    <details id="goff-explainer">
-      <summary>How is this calculated?</summary>
-      <p class="small">We count the days in the last {{ insight.window_days }} on which you logged pelvic or abdominal pain,
-        bloating, or feeling full quickly. Research (the Goff symptom index) suggests that having these on
-        {{ insight.threshold_days }} or more days a month is a reason to talk to a gynecologist. It is a prompt to get checked, not a diagnosis.</p>
-    </details>
-  </div>
-  <p class="muted">Days logged: <span id="days-logged">{{ insight.days_logged }}</span>
-    {% if insight.average_cycle_length %} · Average cycle: <span id="avg-cycle">{{ insight.average_cycle_length }}</span> days{% endif %}</p>
-  <div id="cycle-status" class="small">
-    {% if cycle.next_period %}<p>Next period expected around <strong id="next-period">{{ cycle.next_period.strftime('%d %b') }}</strong>{% if cycle.late_luteal %} · <span id="late-luteal">pre-period week</span>{% endif %}</p>{% endif %}
-    {% if cycle.ovulation_confirmed_from %}<p id="ovulation-confirmed">Temperature rise from <strong>{{ cycle.ovulation_confirmed_from.strftime('%d %b') }}</strong>: ovulation likely happened just before this.</p>
-    {% elif cycle.bbt_readings %}<p id="ovulation-pending">{{ cycle.bbt_readings }} temperature reading(s) this cycle. No sustained rise yet.</p>{% endif %}
-    {% if cycle.bbt_readings %}<p class="muted" id="not-contraception">{{ cycle.not_contraception }}</p>{% endif %}
-  </div>
-  <p class="muted small" id="insight-disclaimer">{{ insight.disclaimer }}</p>
-  {% if insight.red_flag %}<a class="button" href="/doctors?specialty=Gynecology" id="btn-find-doctor">Find a gynecologist</a>{% endif %}
-
-  {% if logs %}
-  <details>
-    <summary>Recent cycle logs</summary>
-    <table id="logs-table">
-      <thead><tr><th>Date</th><th>Flow</th><th>Pain</th><th>Symptoms</th></tr></thead>
-      <tbody>
-      {% for log in logs %}
-        <tr data-testid="log-row" data-date="{{ log.log_date }}">
-          <td>{{ log.log_date }}</td><td>{{ log.period_flow }}</td><td>{{ log.pain_level }}/10</td>
-          <td>{% if log.pelvic_or_abdominal_pain %}pain {% endif %}{% if log.bloating %}bloating {% endif %}{% if log.early_fullness %}early fullness {% endif %}{% if log.urinary_urgency %}urinary {% endif %}</td>
-        </tr>
-      {% endfor %}
-      </tbody>
-    </table>
-  </details>
-  {% endif %}
-</section>
-{% endblock %}
+{% extends "base.html" %}
+{% block title %}Home - Her Aura{% endblock %}
+{% block content %}
+{% set first_name = user.full_name.split()[0] %}
+{% if request.query_params.get('saved') %}<div class="alert success" id="success-message">Log saved.</div>{% endif %}
+
+<section class="dash-hero">
+  <div class="greeting">
+    <p class="eyebrow" id="greeting">{{ greeting }} · {{ today.strftime('%A, %d %B') }}</p>
+    <h1 id="dashboard-heading">Hello, {{ user.full_name }}</h1>
+    <p class="today-line" id="today-line">
+      {% if cycle.phase == "Period" %}You are on day {{ cycle.cycle_day }} of your period. Go gently today.
+      {% elif cycle.phase == "Pre-period week" %}Your period is due soon. Sleep and mood can dip this week, so be kind to yourself.
+      {% elif cycle.phase == "Period due" %}Your period is due. Log it in the cycle tracker when it starts.
+      {% elif cycle.phase %}You are on day {{ cycle.cycle_day }} of your cycle. A good time to build healthy habits.
+      {% else %}Start by logging your last period. Her Aura learns your rhythm from there.{% endif %}
+    </p>
+    <div class="actions">
+      <a class="button" href="/health" id="btn-log-issue">Log a symptom</a>
+      <a class="button secondary" href="/cycle" id="btn-log-cycle">Open cycle tracker</a>
+    </div>
+  </div>
+
+  {% set length = cycle.average_cycle_length or 28 %}
+  {% set progress = ((cycle.cycle_day or 0) / length) if cycle.cycle_day else 0 %}
+  {% set circ = 376.99 %}
+  <section class="card cycle-orb" id="cycle-orb" aria-labelledby="cycle-orb-title">
+    <svg class="ring" viewBox="0 0 148 148" role="img" aria-label="{% if cycle.cycle_day %}Cycle day {{ cycle.cycle_day }} of about {{ length | round | int }}{% else %}No cycle data yet{% endif %}">
+      <circle class="track" cx="74" cy="74" r="60" fill="none" stroke-width="10"/>
+      <circle class="fill" cx="74" cy="74" r="60" fill="none" stroke-width="10" stroke-linecap="round"
+              stroke-dasharray="{{ circ }}" stroke-dashoffset="{{ circ * (1 - ([progress, 1] | min)) }}" transform="rotate(-90 74 74)"/>
+      <text x="74" y="68" text-anchor="middle" class="small-t">Cycle day</text>
+      <text x="74" y="102" text-anchor="middle" class="big" id="cycle-day">{{ cycle.cycle_day or "-" }}</text>
+    </svg>
+    <div>
+      <h2 id="cycle-orb-title">Your cycle</h2>
+      <p class="phase" id="cycle-phase">{{ cycle.phase or "Not started" }}</p>
+      {% if cycle.next_period %}<p>Next period around <strong>{{ cycle.next_period.strftime('%d %b') }}</strong></p>{% endif %}
+      {% if cycle.last_period_start %}<p class="small" id="orb-last-period">Last period {{ cycle.last_period_start.strftime('%d %b') }} to {% if cycle.period_ongoing %}today{% else %}{{ cycle.last_period_end.strftime('%d %b') }}{% endif %}</p>{% endif %}
+      <a class="button" href="/cycle" id="orb-cycle-link">{% if cycle.last_period_start %}Log period dates{% else %}Log your last period{% endif %}</a>
+    </div>
+  </section>
+</section>
+
+<nav class="quick-grid" aria-label="Her Aura sections" id="quick-links">
+  {% set tiles = [
+    ("/cycle", "tile-cycle", "Cycle tracker", "Period start and end dates", "M12 3a9 9 0 1 0 9 9M12 3a9 9 0 0 1 9 9M12 3v4m9 5h-4"),
+    ("/health", "tile-health", "Symptoms", "Headaches, pain, fatigue", "M3 12h4l2-5 4 10 2-5h6"),
+    ("/sleep", "tile-sleep", "Sleep", "Nights and wind-down", "M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z"),
+    ("/mind", "tile-mind", "Mindfulness", "7-day beginner course", "M12 21c-4-3-8-6-8-11a4 4 0 0 1 8-1 4 4 0 0 1 8 1c0 5-4 8-8 11Z"),
+    ("/load", "tile-load", "Emotional load", "Mood, stress, energy", "M4 18c3-6 5-6 8 0s5 6 8 0M4 10c3-6 5-6 8 0s5 6 8 0"),
+    ("/learn", "tile-learn", "Health library", "Trusted articles", "M4 5h6a2 2 0 0 1 2 2v12a2 2 0 0 0-2-2H4ZM20 5h-6a2 2 0 0 0-2 2v12a2 2 0 0 1 2-2h6Z"),
+    ("/doctors", "tile-doctors", "Find a doctor", "Specialists near you", "M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14Zm9 16-4-4"),
+    ("/appointments", "tile-appointments", "My appointments", "Upcoming and past visits", "M4 6h16v14H4ZM4 10h16M8 3v4m8-4v4")] %}
+  {% for href, id, title, sub, icon in tiles %}
+  <a class="tile" href="{{ href }}" id="{{ id }}">
+    <span class="ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="{{ icon }}"/></svg></span>
+    <strong>{{ title }}</strong><span class="muted">{{ sub }}</span>
+  </a>
+  {% endfor %}
+</nav>
+
+<div class="bento">
+  <section class="card" id="sleep-card">
+    <h2>Sleep this week</h2>
+    {% if sleep.nights %}
+    <p class="metric" id="sleep-hours">{{ sleep.avg_hours }}<small> h a night</small></p>
+    <p class="muted small">Quality {{ sleep.avg_quality }}/5 across {{ sleep.nights }} night{{ '' if sleep.nights == 1 else 's' }}.</p>
+    {% else %}<p class="muted" id="sleep-empty">No nights logged this week.</p>{% endif %}
+    <a href="/sleep">Log last night's sleep</a>
+  </section>
+
+  <section class="card" id="mood-card">
+    <h2>Mood and stress</h2>
+    {% if mood.checkins %}
+    <p class="metric" id="mood-stress">{{ mood.avg_stress }}<small> / 10 stress</small></p>
+    <p class="muted small">Mood {{ mood.avg_mood }}/5 · energy {{ mood.avg_energy }}/5 over the last 2 weeks.</p>
+    {% else %}<p class="muted" id="mood-empty">No check-ins yet.</p>{% endif %}
+    <a href="/load">Do today's check-in</a>
+  </section>
+
+  <section class="card" id="mind-card">
+    <h2>Mindfulness course</h2>
+    <p class="metric" id="mind-progress-count">{{ mind_done | length }}<small> of {{ mind_days }} days</small></p>
+    <div class="dots" aria-hidden="true">{% for d in range(1, mind_days + 1) %}<span class="{{ 'on' if d in mind_done }}"></span>{% endfor %}</div>
+    <a href="/mind">{% if next_mind_day %}Start day {{ next_mind_day }}{% else %}Review the course{% endif %}</a>
+  </section>
+
+  <section class="card span-2" id="suggestions-card">
+    <h2>Suggestions for you</h2>
+    {% if suggestions %}
+      {% for s in suggestions %}
+      <article class="suggestion {{ s.urgency }}" data-testid="suggestion" data-category="{{ s.category }}" data-urgency="{{ s.urgency }}">
+        <p><strong>{% if s.urgency == 'soon' %}See a doctor soon{% else %}Consider a visit{% endif %}: {{ s.specialty }}</strong></p>
+        <p data-testid="suggestion-reason">{{ s.reason }}</p>
+        {% if s.tips %}<ul class="small">{% for tip in s.tips %}<li>{{ tip }}</li>{% endfor %}</ul>{% endif %}
+        <a href="/doctors?specialty={{ s.specialty | urlencode }}" data-testid="suggestion-find-doctor">Find a {{ s.specialty }} doctor</a>
+      </article>
+      {% endfor %}
+    {% else %}
+      <p id="no-suggestions" class="muted">Nothing to flag right now. Keep logging how you feel.</p>
+    {% endif %}
+    <p class="muted small" id="emergency-note">{{ emergency_note }}</p>
+  </section>
+
+  <section class="card" id="appointment-card">
+    <h2>Next appointment</h2>
+    {% if next_appointment %}
+    <p class="metric" id="next-appointment-date">{{ next_appointment.slot.starts_at.strftime('%d %b') }}<small> {{ next_appointment.slot.starts_at.strftime('%H:%M') }}</small></p>
+    <p class="muted small">{{ next_appointment.slot.doctor.full_name }} · {{ next_appointment.slot.doctor.specialty }}</p>
+    <a href="/appointments">View my appointments</a>
+    {% else %}
+    <p class="muted" id="no-appointment">Nothing booked.</p>
+    <a href="/doctors">Find a doctor</a>
+    {% endif %}
+  </section>
+</div>
+
+<section class="card">
+  <h2>Recent symptoms</h2>
+  {% if issues %}
+  <table id="issues-table">
+    <thead><tr><th>Date</th><th>Issue</th><th>Severity</th><th>Notes</th></tr></thead>
+    <tbody>
+    {% for i in issues %}
+      <tr data-testid="issue-row" data-category="{{ i.category }}">
+        <td>{{ i.log_date }}</td><td>{{ label(i.category) }}</td><td>{{ i.severity }}/10</td><td>{{ i.notes }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p id="empty-issues">Nothing logged yet. <a href="/health">Log a symptom</a>.</p>
+  {% endif %}
+</section>
+
+<section class="card {% if insight.red_flag %}flag{% endif %}" id="insight-card" data-red-flag="{{ 'true' if insight.red_flag else 'false' }}">
+  <h2>Cycle health check</h2>
+  <p id="insight-message">{{ insight.message }}</p>
+  <div id="goff-progress" class="progress-block">
+    <p>Symptom days: <strong id="symptom-days">{{ insight.symptom_days }}</strong> of last {{ insight.window_days }}</p>
+    <progress id="symptom-days-bar" max="{{ insight.window_days }}" value="{{ insight.symptom_days }}"
+              aria-label="Symptom days in the last {{ insight.window_days }} days"></progress>
+    <details id="goff-explainer">
+      <summary>How is this calculated?</summary>
+      <p class="small">We count the days in the last {{ insight.window_days }} on which you logged pelvic or abdominal pain,
+        bloating, or feeling full quickly. Research (the Goff symptom index) suggests that having these on
+        {{ insight.threshold_days }} or more days a month is a reason to talk to a gynecologist. It is a prompt to get checked, not a diagnosis.</p>
+    </details>
+  </div>
+  <p class="muted">Days logged: <span id="days-logged">{{ insight.days_logged }}</span>
+    {% if insight.average_cycle_length %} · Average cycle: <span id="avg-cycle">{{ insight.average_cycle_length }}</span> days{% endif %}
+    {% if cycle.average_period_length %} · Average period: <span id="avg-period">{{ cycle.average_period_length }}</span> days{% endif %}</p>
+  <div id="cycle-status" class="small">
+    {% if cycle.next_period %}<p>Next period expected around <strong id="next-period">{{ cycle.next_period.strftime('%d %b') }}</strong>{% if cycle.late_luteal %} · <span id="late-luteal">pre-period week</span>{% endif %}</p>{% endif %}
+    {% if cycle.ovulation_confirmed_from %}<p id="ovulation-confirmed">Temperature rise from <strong>{{ cycle.ovulation_confirmed_from.strftime('%d %b') }}</strong>: ovulation likely happened just before this.</p>
+    {% elif cycle.bbt_readings %}<p id="ovulation-pending">{{ cycle.bbt_readings }} temperature reading(s) this cycle. No sustained rise yet.</p>{% endif %}
+    {% if cycle.bbt_readings %}<p class="muted" id="not-contraception">{{ cycle.not_contraception }}</p>{% endif %}
+  </div>
+  <p class="muted small" id="insight-disclaimer">{{ insight.disclaimer }}</p>
+  {% if insight.red_flag %}<a class="button" href="/doctors?specialty=Gynecology" id="btn-find-doctor">Find a gynecologist</a>{% endif %}
+
+  {% if logs %}
+  <details>
+    <summary>Recent daily cycle logs</summary>
+    <table id="logs-table">
+      <thead><tr><th>Date</th><th>Flow</th><th>Pain</th><th>Symptoms</th></tr></thead>
+      <tbody>
+      {% for log in logs %}
+        <tr data-testid="log-row" data-date="{{ log.log_date }}">
+          <td>{{ log.log_date }}</td><td>{{ log.period_flow }}</td><td>{{ log.pain_level }}/10</td>
+          <td>{% if log.pelvic_or_abdominal_pain %}pain {% endif %}{% if log.bloating %}bloating {% endif %}{% if log.early_fullness %}early fullness {% endif %}{% if log.urinary_urgency %}urinary {% endif %}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </details>
+  {% endif %}
+</section>
+{% endblock %}

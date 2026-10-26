@@ -6,6 +6,7 @@ import { DoctorsPage } from './DoctorsPage';
 import { AppointmentsPage } from './AppointmentsPage';
 import { HealthLogPage } from './HealthLogPage';
 import { HomePage } from './HomePage';
+import { DoctorProfilePage } from './DoctorProfilePage';
 import { MindPage, SleepPage } from './WellbeingPages';
 import { AdPage, LearnPage, LoadPage, PremiumPage } from './LearnPages';
 
@@ -19,6 +20,7 @@ export class PageManager {
   readonly appointments: AppointmentsPage;
   readonly healthLog: HealthLogPage;
   readonly home: HomePage;
+  readonly doctorProfile: DoctorProfilePage;
   readonly sleep: SleepPage;
   readonly mind: MindPage;
   readonly learn: LearnPage;
@@ -35,6 +37,7 @@ export class PageManager {
     this.appointments = new AppointmentsPage(page);
     this.healthLog = new HealthLogPage(page);
     this.home = new HomePage(page);
+    this.doctorProfile = new DoctorProfilePage(page);
     this.sleep = new SleepPage(page);
     this.mind = new MindPage(page);
     this.learn = new LearnPage(page);

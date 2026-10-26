@@ -29,11 +29,12 @@ from app.models import Appointment, Doctor, EmotionalCheckIn, HealthIssueLog, Mi
 from app.security import hash_password, verify_password
 
 from app.services import articles, emotional_load, health_suggestions, learn_access, wellbeing
-from app.routers.api import emotional_insights_for
+from app.routers.api import _doctor_profile, emotional_insights_for
+from app.services import doctors as doctor_service
 
 from app.services.cycle import cycle_status
 
-from app.services.daily_logs import LogError, copy_previous_day
+from app.services.daily_logs import MAX_PERIOD_DAYS, LogError, copy_previous_day, log_period
 
 from app.services.health_insights import build_insight
 
@@ -203,13 +204,21 @@ def dashboard(request: Request, user: User | None = Depends(optional_user), db: 
 
                              .order_by(HealthIssueLog.log_date.desc(), HealthIssueLog.id.desc())))
 
-    return _render(request, "dashboard.html", user, logs=logs[:14], insight=build_insight(logs, date.today()),
-
-                   issues=issues[:10], suggestions=health_suggestions.suggest(issues, date.today()),
-
+    today = date.today()
+    nights = list(db.scalars(select(SleepLog).where(SleepLog.user_id == user.id)))
+    mind_done = set(db.scalars(select(MindfulnessSession.program_day).where(MindfulnessSession.user_id == user.id)))
+    next_appointment = db.scalar(
+        select(Appointment).join(Slot).where(Appointment.patient_id == user.id, Appointment.status == "booked",
+                                             Slot.starts_at > datetime.now()).order_by(Slot.starts_at).limit(1))
+    hour = datetime.now().hour
+    greeting = "Good morning" if hour < 12 else "Good afternoon" if hour < 18 else "Good evening"
+    return _render(request, "dashboard.html", user, logs=logs[:14], insight=build_insight(logs, today),
+                   issues=issues[:10], suggestions=health_suggestions.suggest(issues, today),
                    emergency_note=health_suggestions.EMERGENCY_NOTE, label=health_suggestions.label,
-
-                   cycle=cycle_status(logs, date.today()))
+                   cycle=cycle_status(logs, today), today=today, greeting=greeting,
+                   sleep=wellbeing.sleep_summary(nights, today), mood=emotional_insights_for(db, user.id),
+                   mind_done=mind_done, mind_days=wellbeing.PROGRAM_DAYS, next_mind_day=wellbeing.next_program_day(mind_done),
+                   next_appointment=next_appointment)
 
 
 
@@ -277,23 +286,47 @@ def health_submit(
 
 
 
-@router.get("/log", response_class=HTMLResponse)
+@router.get("/log")
+def old_log_url():
+    return RedirectResponse("/cycle", status_code=301)
 
+
+def _cycle_page(request: Request, user: User, db: Session, error: str | None = None, today: str | None = None):
+    logs = list(db.scalars(select(SymptomLog).where(SymptomLog.user_id == user.id)))
+    return _render(request, "log_form.html", user, today=today or date.today().isoformat(), max_date=date.today().isoformat(),
+                   error=error, cycle=cycle_status(logs, date.today()), max_period_days=MAX_PERIOD_DAYS,
+                   saved=request.query_params.get("saved"))
+
+
+@router.get("/cycle", response_class=HTMLResponse)
 def log_form(request: Request, user: User | None = Depends(optional_user), db: Session = Depends(get_db)):
 
     if not user:
 
         return _login_redirect()
 
-    return _render(request, "log_form.html", user, today=date.today().isoformat(),
-
-                   error=request.query_params.get("error"))
+    return _cycle_page(request, user, db, error=request.query_params.get("error"))
 
 
+@router.post("/cycle/period")
+def period_submit(start_date: date = Form(...), end_date: str = Form(""), flow: str = Form("medium"),
+                  user: User | None = Depends(optional_user), db: Session = Depends(get_db)):
+    if not user:
+        return _login_redirect()
+    try:
+        end = date.fromisoformat(end_date) if end_date.strip() else None
+        log_period(db, user.id, start_date, end, flow, date.today())
+    except ValueError:
+        return RedirectResponse(f"/cycle?error={quote('Please enter a valid end date.')}", status_code=303)
+    except LogError as e:
+        return RedirectResponse(f"/cycle?error={quote(str(e))}", status_code=303)
+    return RedirectResponse("/cycle?saved=period", status_code=303)
 
 
 
-@router.post("/log/same-as-yesterday")
+
+
+@router.post("/cycle/same-as-yesterday")
 
 def log_same_as_yesterday(user: User | None = Depends(optional_user), db: Session = Depends(get_db)):
 
@@ -307,7 +340,7 @@ def log_same_as_yesterday(user: User | None = Depends(optional_user), db: Sessio
 
     except LogError as e:
 
-        return RedirectResponse(f"/log?error={quote(str(e))}", status_code=303)
+        return RedirectResponse(f"/cycle?error={quote(str(e))}", status_code=303)
 
     return RedirectResponse("/dashboard?saved=1", status_code=303)
 
@@ -315,7 +348,7 @@ def log_same_as_yesterday(user: User | None = Depends(optional_user), db: Sessio
 
 
 
-@router.post("/log", response_class=HTMLResponse)
+@router.post("/cycle", response_class=HTMLResponse)
 
 def log_submit(
 
@@ -385,7 +418,7 @@ def log_submit(
 
     if error:
 
-        return _render(request, "log_form.html", user, error=error, today=log_date.isoformat())
+        return _cycle_page(request, user, db, error=error, today=log_date.isoformat())
 
 
 
@@ -735,3 +768,29 @@ async def load_submit(request: Request, user: User | None = Depends(optional_use
                             notes=str(form.get("notes", ""))[:1000]))
     db.commit()
     return RedirectResponse("/load?saved=1", status_code=303)
+
+
+# ---------- Doctor profile + reviews ----------
+@router.get("/doctors/{doctor_id}", response_class=HTMLResponse)
+def doctor_profile_page(doctor_id: int, request: Request, user: User | None = Depends(optional_user), db: Session = Depends(get_db)):
+    if not user:
+        return _login_redirect()
+    from fastapi import HTTPException
+    try:
+        doctor = _doctor_profile(db, doctor_id, user)
+    except HTTPException:
+        return RedirectResponse("/doctors", status_code=303)
+    return _render(request, "doctor_profile.html", user, doctor=doctor,
+                   error=request.query_params.get("error"), saved=request.query_params.get("saved"))
+
+
+@router.post("/doctors/{doctor_id}/review")
+def doctor_review_submit(doctor_id: int, appointment_id: int = Form(...), rating: int = Form(...), comment: str = Form(""),
+                         user: User | None = Depends(optional_user), db: Session = Depends(get_db)):
+    if not user:
+        return _login_redirect()
+    try:
+        doctor_service.add_review(db, user.id, doctor_id, appointment_id, rating, comment, user.full_name)
+    except doctor_service.ReviewError as e:
+        return RedirectResponse(f"/doctors/{doctor_id}?error={quote(str(e))}", status_code=303)
+    return RedirectResponse(f"/doctors/{doctor_id}?saved=1", status_code=303)

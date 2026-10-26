@@ -104,14 +104,18 @@ def build_prompt(question: str, hits: list[tuple[float, Chunk]]) -> str:
 def generate(prompt: str) -> str:
     import anthropic  # only needed when you actually call the model
 
+    from ai.tracing import traced_call
+
     client = anthropic.Anthropic()  # reads ANTHROPIC_API_KEY
-    response = client.beta.messages.create(
-        model=os.getenv("HERAURA_AI_MODEL", "claude-opus-5-5"),
-        max_tokens=1000,
-        messages=[{"role": "user", "content": prompt}],
-        betas=["server-side-fallback-2026-07-01"],
-        fallbacks="default",
-    )
+    model = os.getenv("HERAURA_AI_MODEL", "claude-opus-5-5")
+    with traced_call("rag_lab", prompt.split("<context>")[0], model) as t:   # version = the rules part of the prompt
+        t["response"] = response = client.beta.messages.create(
+            model=model,
+            max_tokens=1000,
+            messages=[{"role": "user", "content": prompt}],
+            betas=["server-side-fallback-2026-07-01"],
+            fallbacks="default",
+        )
     if response.stop_reason == "refusal":
         return "(the model declined to answer)"
     return "".join(b.text for b in response.content if b.type == "text")

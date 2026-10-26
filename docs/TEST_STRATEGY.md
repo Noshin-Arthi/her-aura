@@ -9,7 +9,7 @@
 
 ```mermaid
 flowchart TB
-    UI["UI / E2E (Playwright + POM)<br/>~56 tests · user journeys only"]
+    UI["UI / E2E (Playwright + POM)<br/>~62 tests · user journeys only"]
     API["API (pytest + TestClient)<br/>business rules, validation, auth"]
     DB["DB integrity (raw SQL)<br/>joins, duplicates, orphans, hashing"]
     UNIT["Unit (pytest)<br/>pure rules: red flag, cycle length, AI helpers"]
@@ -69,6 +69,8 @@ flowchart TB
 | US-30 AC1-4 | `tests/unit/test_articles.py` (10 featured, topics, https + trusted sources, unique slugs, safety never premium), `learn-and-load.spec.ts` "10 featured" |
 | US-31 AC1-5 | `test_articles.py` (unlock matrix, 14.9 vs 15 s ad, daily limit 2 vs 3), `tests/api/test_learn_and_load_api.py` (no locked URLs, 402, premium on/off, early claim, claim without start, one-article unlock, daily limit), `learn-and-load.spec.ts` (ad flow, premium) |
 | US-32 AC1-6 | `tests/unit/test_emotional_load.py` (9 vs 10 low-mood days, stress 6 vs 7, ordering, top areas, phase comparison needs 3+3), `test_learn_and_load_api.py` (round trip, validation, one per day, insights, private), `learn-and-load.spec.ts` (check-in → insights, support line) |
+| US-21 AC1-5 | `tests/api/test_nearby_and_reviews_api.py` (profile, review after past visit, future/cancelled/twice/wrong doctor rejected, someone else's visit, rating 0/6, idempotent seeding), `e2e/tests/nearby.spec.ts` (profile + sample badges, future visit in history not rateable) |
+| US-22 AC1-6 | `tests/unit/test_geo_and_osm.py` (haversine known values, weighted rating, ranking both modes, coordinate rounding, OSM parsing/dedupe, specialty matching, no health words in the query, mirror fallback, all servers down), `test_nearby_and_reviews_api.py` (both lists, radius, sorts, validation, provider failure), `nearby.spec.ts` (geolocation emulation, sort, typed area, specialty filter) |
 | US-03 AC2 (UI) | `symptom-log.spec.ts` "future date is blocked by the form" (browser validation) + API test for the server check |
 
 ## Flaky-test policy

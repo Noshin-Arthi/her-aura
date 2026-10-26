@@ -256,9 +256,22 @@ class SleepOut(SleepIn):
 
 
 
+class PeriodOut(BaseModel):
+    start: date
+    end: date
+    days: int
+
+
 class CycleStatusOut(BaseModel):
 
     last_period_start: date | None
+
+    last_period_end: date | None = None
+    period_ongoing: bool = False
+    periods: list[PeriodOut] = []
+    average_period_length: float | None = None
+    cycle_day: int | None = None
+    phase: str | None = None
 
     average_cycle_length: float | None
 
@@ -314,3 +327,9 @@ class EmotionalIn(BaseModel):
 
 class EmotionalOut(EmotionalIn):
     id: int
+
+
+class ReviewIn(BaseModel):
+    appointment_id: int
+    rating: int = Field(ge=1, le=5)
+    comment: str = Field(default="", max_length=1000)

@@ -19,3 +19,4 @@ e2e/blob-report/
 
 # AI run outputs (review before committing a plan)
 ai/reports/
+ai/traces/

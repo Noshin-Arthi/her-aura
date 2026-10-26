@@ -39,6 +39,19 @@ jobs:
             e2e/test-results
           retention-days: 14
 
+  docs-freshness:            # the knowledge base's "At a glance" numbers must match the code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12", cache: pip }
+      - run: pip install -r requirements-dev.txt
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm, cache-dependency-path: e2e/package-lock.json }
+      - run: npm ci
+        working-directory: e2e
+      - run: python scripts/update_kb.py --check
+
   secrets-scan:
     runs-on: ubuntu-latest
     steps:

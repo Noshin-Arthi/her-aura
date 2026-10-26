@@ -9,6 +9,8 @@ from typing import TypeVar
 import anthropic
 from pydantic import BaseModel
 
+from ai.tracing import traced_call
+
 MODEL = os.getenv("HERAURA_AI_MODEL", "claude-opus-5-5")
 T = TypeVar("T", bound=BaseModel)
 
@@ -17,19 +19,20 @@ class AIRefused(RuntimeError):
     """The model declined the request (stop_reason == "refusal")."""
 
 
-def ask_structured(system: str, user: str, schema: type[T], max_tokens: int = 16000) -> T:
+def ask_structured(system: str, user: str, schema: type[T], max_tokens: int = 16000, tool: str = "ai") -> T:
     # Reads ANTHROPIC_API_KEY (or an `ant auth login` profile) from the environment.
     client = anthropic.Anthropic()
-    response = client.beta.messages.parse(
-        model=MODEL,
-        max_tokens=max_tokens,
-        system=system,
-        messages=[{"role": "user", "content": user}],
-        output_format=schema,
-        # If the model declines on safety grounds, the API retries on a fallback model automatically.
-        betas=["server-side-fallback-2026-07-01"],
-        fallbacks="default",
-    )
+    with traced_call(tool, system, MODEL) as t:      # one trace line per call: tokens, latency, cost, errors
+        t["response"] = response = client.beta.messages.parse(
+            model=MODEL,
+            max_tokens=max_tokens,
+            system=system,
+            messages=[{"role": "user", "content": user}],
+            output_format=schema,
+            # If the model declines on safety grounds, the API retries on a fallback model automatically.
+            betas=["server-side-fallback-2026-07-01"],
+            fallbacks="default",
+        )
     if response.stop_reason == "refusal":
         raise AIRefused(str(response.stop_details))
     if response.parsed_output is None:

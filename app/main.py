@@ -10,6 +10,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.db import Base, SessionLocal, engine
 from app.routers import api, pages
 from app.seed import seed_demo_data
+from app.services.doctors import seed_profiles
 
 
 @asynccontextmanager
@@ -17,6 +18,7 @@ async def lifespan(_: FastAPI):
     Base.metadata.create_all(engine)
     with SessionLocal() as db:
         seed_demo_data(db)
+        seed_profiles(db)   # idempotent: also fills new tables on an existing live database
     yield
 
 

@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}{{ doctor.name }} - Her Aura{% endblock %}
+{% block content %}
+<p><a href="/doctors">← Back to all doctors</a></p>
+{% if saved %}<div class="alert success" id="success-message">Thank you, your review is saved.</div>{% endif %}
+
+<section class="card" id="doctor-profile">
+  <h1 id="doctor-name">{{ doctor.name }}</h1>
+  <p><strong>{{ doctor.specialty }}</strong>{% if doctor.qualifications %} · {{ doctor.qualifications }}{% endif %}</p>
+  <p id="doctor-rating">{% if doctor.rating is not none %}★ {{ "%.1f"|format(doctor.rating) }} <span class="muted">({{ doctor.review_count }} reviews)</span>{% else %}<span class="muted">No reviews yet</span>{% endif %}</p>
+  {% if doctor.years_experience %}<p>{{ doctor.years_experience }} years of experience · Speaks {{ doctor.languages }}</p>{% endif %}
+  {% if doctor.bio %}<p>{{ doctor.bio }}</p>{% endif %}
+  <p class="muted">{{ doctor.clinic }} · {{ doctor.address }}</p>
+  <p class="actions">
+    {% if doctor.phone %}<a class="button secondary" href="tel:{{ doctor.phone | replace('-', '') }}" id="profile-call">Call clinic</a>{% endif %}
+    {% if doctor.directions_url %}<a class="button secondary" href="{{ doctor.directions_url }}" target="_blank" rel="noopener" id="profile-directions">Get directions</a>{% endif %}
+    <a class="button" href="/doctors?specialty={{ doctor.specialty | urlencode }}" id="profile-book">Book an appointment</a>
+  </p>
+</section>
+
+<section class="card" id="your-history">
+  <h2>Your history with {{ doctor.name }}</h2>
+  {% if doctor.history %}
+  <table id="history-table">
+    <thead><tr><th>When</th><th>Reason</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for h in doctor.history %}
+      <tr data-testid="history-row" data-appointment-id="{{ h.appointment_id }}">
+        <td>{{ h.starts_at[:16] | replace('T', ' ') }}</td><td>{{ h.reason }}</td><td>{{ h.status }}</td>
+        <td>{% if h.can_review %}
+          <form method="post" action="/doctors/{{ doctor.id }}/review" class="review-form" data-testid="review-form">
+            <input type="hidden" name="appointment_id" value="{{ h.appointment_id }}">
+            <label>Rating (1-5) <input type="number" name="rating" min="1" max="5" value="5" required data-testid="review-rating"></label>
+            <input name="comment" maxlength="1000" placeholder="Short comment (optional)" data-testid="review-comment">
+            <button type="submit" data-testid="btn-submit-review">Rate this visit</button>
+          </form>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <p class="muted" id="no-history">No visits with this doctor yet.</p>
+  {% endif %}
+</section>
+
+<section class="card" id="reviews">
+  <h2>Patient reviews</h2>
+  {% for r in doctor.reviews %}
+  <article class="review" data-testid="review" data-sample="{{ 'true' if r.sample else 'false' }}">
+    <p><strong>★ {{ r.rating }}</strong> · {{ r.reviewer }} · <span class="muted small">{{ r.date }}</span>
+      {% if r.sample %}<span class="badge sample" data-testid="sample-badge">Sample review (demo data)</span>{% endif %}</p>
+    {% if r.comment %}<p>{{ r.comment }}</p>{% endif %}
+  </article>
+  {% else %}
+  <p class="muted" id="no-reviews">No reviews yet. Patients can rate a doctor after a visit.</p>
+  {% endfor %}
+</section>
+{% endblock %}
