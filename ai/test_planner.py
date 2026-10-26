@@ -93,13 +93,14 @@ def main() -> None:
 
     story = extract_story(Path(args.requirements).read_text(encoding="utf-8"), args.story_id)
     print(f"Planning {args.story_id}...")
-    plan = ask_structured((PROMPTS / "planner_system.md").read_text(encoding="utf-8"), story, TestPlan)
+    plan = ask_structured((PROMPTS / "planner_system.md").read_text(encoding="utf-8"), story, TestPlan, tool="test_planner")
 
     print("Reviewing the draft...")
     review = ask_structured(
         (PROMPTS / "reviewer_system.md").read_text(encoding="utf-8"),
         f"<story>\n{story}\n</story>\n\n<draft_plan>\n{plan.model_dump_json(indent=2)}\n</draft_plan>",
         PlanReview,
+        tool="plan_reviewer",
     )
     missing = uncovered_acs(plan, acceptance_criteria_ids(story, args.story_id))
 

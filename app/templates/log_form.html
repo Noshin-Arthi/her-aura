@@ -1,44 +1,107 @@
-{% extends "base.html" %}
-{% block title %}Daily log - Her Aura{% endblock %}
-{% block content %}
-<h1>Daily log</h1>
-
-<form method="post" action="/log/same-as-yesterday" class="quick-action">
-  <button type="submit" class="secondary" id="btn-same-as-yesterday">Same as yesterday</button>
-  <span class="muted small">Copies yesterday's flow, pain and symptoms to today.</span>
-</form>
-
-<form method="post" action="/log" id="log-form" class="card form">
-  <label for="log_date">Date</label>
-  <input id="log_date" name="log_date" type="date" value="{{ today }}" max="{{ today }}" required>
-
-  <span class="label">Period flow</span>
-  <div class="chips" role="radiogroup" aria-label="Period flow">
-    {% for value, text in [("none", "None"), ("light", "Light"), ("medium", "Medium"), ("heavy", "Heavy")] %}
-    <label class="chip"><input type="radio" name="period_flow" id="flow-{{ value }}" value="{{ value }}" {% if value == "none" %}checked{% endif %}> {{ text }}</label>
-    {% endfor %}
-  </div>
-
-  <label for="pain_level">Pain level (0 = none, 10 = worst)</label>
-  <input id="pain_level" name="pain_level" type="number" inputmode="numeric" min="0" max="10" value="0" required>
-
-  <label for="bbt_celsius">Basal body temperature, °C (optional, measured on waking)</label>
-  <input id="bbt_celsius" name="bbt_celsius" type="number" inputmode="decimal" step="0.01" min="35" max="38.5" placeholder="36.45">
-  <p class="muted small">Used to confirm ovulation after it happens. Not a contraceptive.</p>
-
-  <span class="label">Symptoms today (tap all that apply)</span>
-  <div class="chips">
-    <label class="chip"><input type="checkbox" id="pelvic_or_abdominal_pain" name="pelvic_or_abdominal_pain" value="true"> Pelvic / abdominal pain</label>
-    <label class="chip"><input type="checkbox" id="bloating" name="bloating" value="true"> Bloating</label>
-    <label class="chip"><input type="checkbox" id="early_fullness" name="early_fullness" value="true"> Feeling full quickly</label>
-    <label class="chip"><input type="checkbox" id="urinary_urgency" name="urinary_urgency" value="true"> Urinary urgency</label>
-  </div>
-
-  <details>
-    <summary>Add a note (optional)</summary>
-    <textarea id="notes" name="notes" maxlength="1000" rows="3"></textarea>
-  </details>
-
-  <button type="submit" id="btn-save-log">Save log</button>
-</form>
-{% endblock %}
+{% extends "base.html" %}
+{% block title %}Cycle tracker - Her Aura{% endblock %}
+{% block content %}
+<header class="page-head">
+  <p class="eyebrow">Your period, day by day</p>
+  <h1 id="cycle-heading">Cycle tracker</h1>
+  <p class="lead">Log when your period starts and ends, and how you feel each day.</p>
+</header>
+{% if saved == "period" %}<div class="alert success" id="period-saved">Period saved.</div>{% endif %}
+
+<section class="stat-strip" id="cycle-summary" aria-label="Cycle summary">
+  <div class="stat"><span class="stat-label">Last period</span>
+    <strong id="summary-last-period">{% if cycle.last_period_start %}{{ cycle.last_period_start.strftime('%d %b') }} to {% if cycle.period_ongoing %}today{% else %}{{ cycle.last_period_end.strftime('%d %b') }}{% endif %}{% else %}Not logged{% endif %}</strong></div>
+  <div class="stat"><span class="stat-label">Average period</span>
+    <strong id="summary-period-length">{% if cycle.average_period_length %}{{ cycle.average_period_length }} days{% else %}-{% endif %}</strong></div>
+  <div class="stat"><span class="stat-label">Average cycle</span>
+    <strong id="summary-cycle-length">{% if cycle.average_cycle_length %}{{ cycle.average_cycle_length }} days{% else %}Needs 2 periods{% endif %}</strong></div>
+  <div class="stat"><span class="stat-label">Next period around</span>
+    <strong id="summary-next-period">{% if cycle.next_period %}{{ cycle.next_period.strftime('%d %b') }}{% else %}-{% endif %}</strong></div>
+</section>
+
+<div class="grid two">
+  <section class="card" id="period-card" aria-labelledby="period-title">
+    <h2 id="period-title">Log a period</h2>
+    {% if cycle.period_ongoing %}
+    <p class="small" id="period-ongoing">Your period started on <strong>{{ cycle.last_period_start.strftime('%d %b') }}</strong>. When it ends, enter the end date below.</p>
+    {% endif %}
+    <form method="post" action="/cycle/period" id="period-form" class="form">
+      <label for="start_date">Start date</label>
+      <input id="start_date" name="start_date" type="date" max="{{ max_date }}" required
+             value="{% if cycle.period_ongoing %}{{ cycle.last_period_start.isoformat() }}{% endif %}">
+      <label for="end_date">End date <span class="muted small">(leave empty if it is still going)</span></label>
+      <input id="end_date" name="end_date" type="date" max="{{ max_date }}">
+      <span class="label">Usual flow</span>
+      <div class="chips" role="radiogroup" aria-label="Usual flow">
+        {% for value, text in [("light", "Light"), ("medium", "Medium"), ("heavy", "Heavy")] %}
+        <label class="chip"><input type="radio" name="flow" id="period-flow-{{ value }}" value="{{ value }}" {% if value == "medium" %}checked{% endif %}> {{ text }}</label>
+        {% endfor %}
+      </div>
+      <p class="muted small">Up to {{ max_period_days }} days. Days you already logged keep their own flow.</p>
+      <button type="submit" id="btn-save-period">Save period</button>
+    </form>
+  </section>
+
+  <section class="card" id="periods-card" aria-labelledby="periods-title">
+    <h2 id="periods-title">Your periods</h2>
+    {% if cycle.periods %}
+    <table id="periods-table">
+      <thead><tr><th>Start</th><th>End</th><th>Length</th></tr></thead>
+      <tbody>
+      {% for p in cycle.periods[:8] %}
+        <tr data-testid="period-row" data-start="{{ p.start }}" data-end="{{ p.end }}">
+          <td>{{ p.start.strftime('%d %b %Y') }}</td>
+          <td>{% if loop.first and cycle.period_ongoing %}<span class="badge">Ongoing</span>{% else %}{{ p.end.strftime('%d %b %Y') }}{% endif %}</td>
+          <td>{{ p.days }} day{{ '' if p.days == 1 else 's' }}</td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    {% else %}
+    <p class="muted" id="no-periods">No periods logged yet. Add your last one on the left.</p>
+    {% endif %}
+  </section>
+</div>
+
+<section class="card" aria-labelledby="daily-title">
+  <h2 id="daily-title">Daily log</h2>
+  <form method="post" action="/cycle/same-as-yesterday" class="quick-action">
+    <button type="submit" class="secondary" id="btn-same-as-yesterday">Same as yesterday</button>
+    <span class="muted small">Copies yesterday's flow, pain and symptoms to today.</span>
+  </form>
+
+  <form method="post" action="/cycle" id="log-form" class="form">
+    <label for="log_date">Date</label>
+    <input id="log_date" name="log_date" type="date" value="{{ today }}" max="{{ max_date }}" required>
+
+    <span class="label">Period flow</span>
+    <div class="chips" role="radiogroup" aria-label="Period flow">
+      {% for value, text in [("none", "None"), ("light", "Light"), ("medium", "Medium"), ("heavy", "Heavy")] %}
+      <label class="chip"><input type="radio" name="period_flow" id="flow-{{ value }}" value="{{ value }}" {% if value == "none" %}checked{% endif %}> {{ text }}</label>
+      {% endfor %}
+    </div>
+
+    <label for="pain_level">Pain level (0 = none, 10 = worst)</label>
+    <input id="pain_level" name="pain_level" type="number" inputmode="numeric" min="0" max="10" value="0" required>
+
+    <label for="bbt_celsius">Basal body temperature, °C (optional, measured on waking)</label>
+    <input id="bbt_celsius" name="bbt_celsius" type="number" inputmode="decimal" step="0.01" min="35" max="38.5" placeholder="36.45">
+    <p class="muted small">Used to confirm ovulation after it happens. Not a contraceptive.</p>
+
+    <span class="label">Symptoms today (tap all that apply)</span>
+    <div class="chips">
+      <label class="chip"><input type="checkbox" id="pelvic_or_abdominal_pain" name="pelvic_or_abdominal_pain" value="true"> Pelvic / abdominal pain</label>
+      <label class="chip"><input type="checkbox" id="bloating" name="bloating" value="true"> Bloating</label>
+      <label class="chip"><input type="checkbox" id="early_fullness" name="early_fullness" value="true"> Feeling full quickly</label>
+      <label class="chip"><input type="checkbox" id="urinary_urgency" name="urinary_urgency" value="true"> Urinary urgency</label>
+    </div>
+
+    <details>
+      <summary>Add a note (optional)</summary>
+      <textarea id="notes" name="notes" maxlength="1000" rows="3"></textarea>
+    </details>
+
+    <button type="submit" id="btn-save-log">Save daily log</button>
+  </form>
+</section>
+{% endblock %}

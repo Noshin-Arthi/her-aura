@@ -10,11 +10,37 @@
   </select>
   <noscript><button type="submit">Filter</button></noscript>
 </form>
+<section class="card" id="near-me">
+  <h2>Doctors near you</h2>
+  <p class="muted small">Share your location or type an area. We only use it to measure distance and never store it.</p>
+  <div class="near-controls">
+    <button type="button" id="btn-use-location">Use my location</button>
+    <form id="area-form" class="inline-form">
+      <label for="area" class="sr-only">Area</label>
+      <input id="area" name="area" placeholder="Or type an area, e.g. Dhanmondi" maxlength="100">
+      <button type="submit" class="secondary" id="btn-area-search">Search</button>
+    </form>
+    <label for="near-sort">Sort</label>
+    <select id="near-sort">
+      <option value="rating">Top rated</option>
+      <option value="distance">Nearest</option>
+    </select>
+  </div>
+  <p id="near-status" class="muted small" aria-live="polite"></p>
+  <div id="near-map" aria-label="Map of nearby doctors"></div>
+  <h3>On Her Aura <span class="muted small">(bookable, rated by patients)</span></h3>
+  <div id="near-her-aura" class="near-list"></div>
+  <h3>Other hospitals and clinics nearby <span class="muted small">(from OpenStreetMap, not verified by Her Aura)</span></h3>
+  <div id="near-external" class="near-list"></div>
+  <p class="muted small" id="near-attribution">Map data © OpenStreetMap contributors. Ratings are from Her Aura patients and don't measure medical quality. In an emergency, call 999.</p>
+</section>
+
+<h2>All Her Aura doctors</h2>
 {% if not doctors %}<p id="no-doctors">No doctors found for this specialty.</p>{% endif %}
 <div class="grid">
 {% for doctor in doctors %}
   <article class="card" data-testid="doctor-card" data-doctor-id="{{ doctor.id }}">
-    <h2 data-testid="doctor-name">{{ doctor.full_name }}</h2>
+    <h2 data-testid="doctor-name"><a href="/doctors/{{ doctor.id }}" data-testid="doctor-profile-link">{{ doctor.full_name }}</a></h2>
     <p><span data-testid="doctor-specialty">{{ doctor.specialty }}</span> · {{ doctor.clinic.name }}</p>
     <p class="muted small">{{ doctor.clinic.address }}</p>
     {% if doctor.clinic.phone %}<p class="small"><a href="tel:{{ doctor.clinic.phone | replace('-', '') }}" data-testid="clinic-call">Call clinic: {{ doctor.clinic.phone }}</a></p>{% endif %}
@@ -36,4 +62,86 @@
   </article>
 {% endfor %}
 </div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+(function () {
+  const specialty = {{ (selected_specialty or '') | tojson }};
+  const status = document.getElementById('near-status');
+  const sortSel = document.getElementById('near-sort');
+  let origin = null, map = null, layer = null;
+
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const stars = r => r == null ? '<span class="muted">No reviews yet</span>' : `★ ${r.toFixed(1)}`;
+
+  function card(p, kind) {
+    const phone = p.phone ? `<a href="tel:${esc(p.phone.replace(/[^+\d]/g, ''))}" data-testid="near-call">Call clinic</a>` : '';
+    const profile = p.profile_url ? `<a href="${p.profile_url}" data-testid="near-profile">View profile and reviews</a>` : '';
+    const sub = kind === 'her_aura' ? `${esc(p.specialty)} · ${esc(p.clinic)}` : `${esc(p.kind)}${p.specialties.length ? ' · ' + esc(p.specialties.join(', ')) : ''}`;
+    return `<article class="near-item" data-testid="near-item" data-source="${kind}">
+      <div><strong data-testid="near-name">${esc(p.name)}</strong><br><span class="muted small">${sub}</span>
+        ${p.address ? `<br><span class="muted small">${esc(p.address)}</span>` : ''}</div>
+      <div class="near-meta"><span data-testid="near-rating">${stars(p.rating)}</span>
+        ${p.review_count ? `<span class="muted small">(${p.review_count})</span>` : ''}
+        <span data-testid="near-distance">${p.distance_km} km</span></div>
+      <div class="near-actions">${profile} ${phone}
+        <a href="${p.directions_url}" target="_blank" rel="noopener" data-testid="near-directions">Get directions</a></div>
+    </article>`;
+  }
+
+  function drawMap(data) {
+    if (!window.L) return;                 // map is a bonus: the list works without it
+    if (!map) {
+      map = L.map('near-map');
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap contributors' }).addTo(map);
+    }
+    if (layer) layer.remove();
+    layer = L.layerGroup().addTo(map);
+    L.circleMarker([origin.lat, origin.lng], { radius: 7 }).addTo(layer).bindPopup('You');
+    [...data.her_aura, ...data.external].forEach(p => L.marker([p.lat, p.lng]).addTo(layer).bindPopup(`${esc(p.name)}<br>${p.distance_km} km`));
+    map.setView([origin.lat, origin.lng], 13);
+  }
+
+  async function load() {
+    if (!origin) return;
+    status.textContent = 'Searching nearby…';
+    const params = new URLSearchParams({ lat: origin.lat, lng: origin.lng, sort: sortSel.value });
+    if (specialty) params.set('specialty', specialty);
+    try {
+      const res = await fetch('/api/nearby?' + params);
+      if (!res.ok) throw new Error(res.status);
+      const data = await res.json();
+      document.getElementById('near-her-aura').innerHTML = data.her_aura.map(p => card(p, 'her_aura')).join('') || '<p class="muted">No Her Aura doctors for this specialty yet.</p>';
+      document.getElementById('near-external').innerHTML = data.external.map(p => card(p, 'external')).join('') ||
+        `<p class="muted">${data.provider_error ? 'The map service is busy right now. Please try again in a minute.' : 'No other places found within ' + data.radius_km + ' km.'}</p>`;
+      status.textContent = `Showing results near ${origin.label}.`;
+      drawMap(data);
+    } catch (e) {
+      status.textContent = 'Could not load nearby doctors. Please try again.';
+    }
+  }
+
+  document.getElementById('btn-use-location').addEventListener('click', () => {
+    if (!navigator.geolocation) { status.textContent = 'Location is not available in this browser. Type an area instead.'; return; }
+    status.textContent = 'Getting your location…';
+    navigator.geolocation.getCurrentPosition(
+      pos => { origin = { lat: pos.coords.latitude, lng: pos.coords.longitude, label: 'your location' }; load(); },
+      () => { status.textContent = 'Location permission was denied. Type an area instead.'; }
+    );
+  });
+  document.getElementById('area-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const q = document.getElementById('area').value.trim();
+    if (!q) return;
+    status.textContent = 'Finding that area…';
+    const res = await fetch('/api/geocode?q=' + encodeURIComponent(q));
+    if (!res.ok) { status.textContent = res.status === 404 ? 'Area not found in Bangladesh. Try another name.' : 'Address search is busy. Try again.'; return; }
+    const g = await res.json();
+    origin = { lat: g.lat, lng: g.lng, label: q };
+    load();
+  });
+  sortSel.addEventListener('change', load);
+})();
+</script>
 {% endblock %}

@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1600 1000" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="70"/></filter>
+    <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency=".85" numOctaves="2" stitchTiles="stitch"/><feColorMatrix values="0 0 0 0 .48  0 0 0 0 .11  0 0 0 0 .29  0 0 0 .05 0"/></filter>
+    <radialGradient id="rose" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#f4a3c1"/><stop offset="1" stop-color="#f4a3c1" stop-opacity="0"/></radialGradient>
+    <radialGradient id="peach" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#ffcfb0"/><stop offset="1" stop-color="#ffcfb0" stop-opacity="0"/></radialGradient>
+    <radialGradient id="lilac" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#c9b6f2"/><stop offset="1" stop-color="#c9b6f2" stop-opacity="0"/></radialGradient>
+    <radialGradient id="plum" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#b0457a"/><stop offset="1" stop-color="#b0457a" stop-opacity="0"/></radialGradient>
+  </defs>
+  <rect width="1600" height="1000" fill="#fff6f8"/>
+  <g filter="url(#soft)">
+    <ellipse cx="1280" cy="160" rx="520" ry="380" fill="url(#rose)" opacity=".85"/>
+    <ellipse cx="220" cy="120" rx="460" ry="320" fill="url(#peach)" opacity=".9"/>
+    <ellipse cx="300" cy="880" rx="560" ry="360" fill="url(#lilac)" opacity=".8"/>
+    <ellipse cx="1380" cy="900" rx="420" ry="300" fill="url(#peach)" opacity=".7"/>
+    <ellipse cx="1180" cy="300" rx="200" ry="160" fill="url(#plum)" opacity=".35"/>
+  </g>
+  <!-- aura rings: the brand motif, a cycle drawn as concentric orbits -->
+  <g fill="none" stroke="#7a1c4b" stroke-linecap="round">
+    <circle cx="1270" cy="210" r="170" stroke-opacity=".10" stroke-width="1.2"/>
+    <circle cx="1270" cy="210" r="240" stroke-opacity=".08" stroke-width="1"/>
+    <circle cx="1270" cy="210" r="320" stroke-opacity=".06" stroke-width="1" stroke-dasharray="2 10"/>
+    <circle cx="1270" cy="210" r="410" stroke-opacity=".05" stroke-width="1"/>
+  </g>
+  <g fill="none" stroke="#7a1c4b" stroke-opacity=".07" stroke-width="1.2">
+    <path d="M-40 760 C 260 660, 520 860, 820 760 S 1380 640, 1660 740"/>
+    <path d="M-40 800 C 260 700, 520 900, 820 800 S 1380 680, 1660 780"/>
+    <path d="M-40 840 C 260 740, 520 940, 820 840 S 1380 720, 1660 820"/>
+  </g>
+  <g fill="#7a1c4b" fill-opacity=".18">
+    <circle cx="1440" cy="210" r="4"/><circle cx="1100" cy="250" r="3"/><circle cx="1270" cy="40" r="3"/>
+  </g>
+  <rect width="1600" height="1000" filter="url(#grain)"/>
+</svg>

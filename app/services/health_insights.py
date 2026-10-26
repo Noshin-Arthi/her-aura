@@ -35,6 +35,25 @@ def period_start_dates(logs) -> list[date]:
     return starts
 
 
+def period_ranges(logs) -> list[tuple[date, date]]:
+    """Each period as (first flow day, last flow day): a run of consecutive days with flow."""
+    flow_days = sorted({log.log_date for log in logs if log.period_flow != "none"})
+    ranges = []
+    for day in flow_days:
+        if ranges and day - ranges[-1][1] == timedelta(days=1):
+            ranges[-1] = (ranges[-1][0], day)
+        else:
+            ranges.append((day, day))
+    return ranges
+
+
+def average_period_length(logs) -> float | None:
+    ranges = period_ranges(logs)
+    if not ranges:
+        return None
+    return round(sum((end - start).days + 1 for start, end in ranges) / len(ranges), 1)
+
+
 def average_cycle_length(logs) -> float | None:
     starts = period_start_dates(logs)
     if len(starts) < 2:

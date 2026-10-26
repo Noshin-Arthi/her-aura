@@ -13,7 +13,7 @@ export interface DailyLog {
 }
 
 export class SymptomLogPage extends BasePage {
-  protected readonly path = '/log';
+  protected readonly path = '/cycle';
   readonly date: Locator;
   readonly pain: Locator;
   readonly notesToggle: Locator;
@@ -32,7 +32,7 @@ export class SymptomLogPage extends BasePage {
   }
 
   async isLoaded(): Promise<void> {
-    await expect(this.page.getByRole('heading', { name: 'Daily log' })).toBeVisible();
+    await expect(this.page.getByRole('heading', { name: 'Cycle tracker', level: 1 })).toBeVisible();
   }
 
   flowChip(flow: Flow): Locator {

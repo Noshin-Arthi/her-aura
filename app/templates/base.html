@@ -4,25 +4,35 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}Her Aura{% endblock %}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
   <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
+  <div class="aura-bg" aria-hidden="true"></div>
   <header class="topbar">
-    <a href="/" class="brand" data-testid="brand">Her Aura</a>
+    <a href="{{ '/dashboard' if user else '/' }}" class="brand" data-testid="brand"><span class="brand-mark" aria-hidden="true"></span>Her Aura</a>
     {% if user %}
+    {% set path = request.url.path %}
     <nav id="main-nav" aria-label="Main">
-      <a href="/dashboard" id="nav-dashboard">Dashboard</a>
-      <a href="/health" id="nav-health">Log health</a>
-      <a href="/log" id="nav-log">Cycle</a>
-      <a href="/sleep" id="nav-sleep">Sleep</a>
-      <a href="/mind" id="nav-mind">Mind</a>
-      <a href="/load" id="nav-load">Emotional load</a>
-      <a href="/learn" id="nav-learn">Learn</a>
-      <a href="/doctors" id="nav-doctors">Doctors</a>
-      <a href="/appointments" id="nav-appointments">Appointments</a>
+      {% for href, id, text in [
+        ("/dashboard", "nav-dashboard", "Home"),
+        ("/cycle", "nav-cycle", "Cycle tracker"),
+        ("/health", "nav-health", "Symptoms"),
+        ("/sleep", "nav-sleep", "Sleep"),
+        ("/mind", "nav-mind", "Mindfulness"),
+        ("/load", "nav-load", "Emotional load"),
+        ("/learn", "nav-learn", "Health library"),
+        ("/doctors", "nav-doctors", "Find a doctor"),
+        ("/appointments", "nav-appointments", "My appointments")] %}
+      <a href="{{ href }}" id="{{ id }}" {% if path == href or path.startswith(href ~ '/') %}aria-current="page"{% endif %}>{{ text }}</a>
+      {% endfor %}
+    </nav>
+    <div class="account">
       <span id="nav-user" class="muted">{{ user.full_name }}</span>
       <form method="post" action="/logout" class="inline"><button id="btn-logout" class="link">Log out</button></form>
-    </nav>
+    </div>
     {% endif %}
   </header>
   <main class="container">

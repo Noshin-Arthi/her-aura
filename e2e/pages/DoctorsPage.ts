@@ -31,16 +31,41 @@ export class DoctorsPage extends BasePage {
   readonly cards: Locator;
   readonly specialties: Locator;
   readonly specialtyFilter: Locator;
+  readonly useLocation: Locator;
+  readonly area: Locator;
+  readonly areaSearch: Locator;
+  readonly nearSort: Locator;
+  readonly nearStatus: Locator;
+  readonly herAuraResults: Locator;
+  readonly externalResults: Locator;
 
   constructor(page: Page) {
     super(page);
     this.cards = page.getByTestId('doctor-card');
     this.specialties = page.getByTestId('doctor-specialty');
     this.specialtyFilter = page.locator('#specialty');
+    this.useLocation = page.locator('#btn-use-location');
+    this.area = page.locator('#area');
+    this.areaSearch = page.locator('#btn-area-search');
+    this.nearSort = page.locator('#near-sort');
+    this.nearStatus = page.locator('#near-status');
+    this.herAuraResults = page.locator('#near-her-aura [data-testid="near-item"]');
+    this.externalResults = page.locator('#near-external [data-testid="near-item"]');
   }
 
   async isLoaded(): Promise<void> {
     await expect(this.page.getByRole('heading', { name: 'Doctors', exact: true })).toBeVisible();
+  }
+
+  async searchArea(area: string): Promise<void> {
+    await this.area.fill(area);
+    await this.areaSearch.click();
+  }
+
+  /** Distances shown in the Her Aura result list, as numbers. */
+  async herAuraDistances(): Promise<number[]> {
+    const texts = await this.herAuraResults.getByTestId('near-distance').allTextContents();
+    return texts.map(t => parseFloat(t));
   }
 
   card(doctorName: string): DoctorCard {

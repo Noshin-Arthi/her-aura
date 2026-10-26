@@ -14,6 +14,7 @@ from fastapi.testclient import TestClient
 from app.db import Base, SessionLocal, engine
 from app.main import app
 from app.seed import seed_demo_data
+from app.services.doctors import seed_profiles
 
 
 @pytest.fixture(autouse=True)
@@ -22,6 +23,7 @@ def fresh_db():
     Base.metadata.create_all(engine)
     with SessionLocal() as db:
         seed_demo_data(db)
+        seed_profiles(db)      # same order as app startup
     yield
 
 

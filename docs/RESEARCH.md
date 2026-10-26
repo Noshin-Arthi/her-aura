@@ -49,6 +49,12 @@ Market scan source: Solu, ["Top 10 Health and Fitness Apps for Women"](https://w
 - The reference [Belle article](https://bellehealth.co/best-apps-for-womens-health-content-2025/) frames mental health as part of hormonal health; we compare stress in the pre-period week with other days.
 - **Crisis support:** Kaan Pete Roi, Bangladesh's first emotional-support and suicide-prevention helpline, 09612-119911, 3pm-3am daily, free. ([Find A Helpline](https://findahelpline.com/organizations/kaan-pete-roi)). The "low mood on most days for two weeks" threshold mirrors common depression-screening wording; it prompts a conversation with a professional, never a diagnosis.
 
+### Doctors near me: data sources and rules
+- **OpenStreetMap** (Overpass API for places, Nominatim for typed areas) is free with no API key. Data is © OpenStreetMap contributors under the ODbL licence, so the UI shows that attribution. Both services ask for an identifying User-Agent, light use and caching; Her Aura does all three and rounds coordinates to about 1 km.
+- **Google Places** (ratings for real clinics) was not used: it requires a billing account even for its free allowance. Scraping Google Maps would break Google's terms.
+- **Ratings** therefore come from Her Aura patients (after a real visit), plus clearly labelled sample reviews on the fictional demo doctors. Ratings describe patient experience, not medical quality; the UI says so.
+- **Weighted rating** (Bayesian average): `(n / (n + m)) × doctor average + (m / (n + m)) × overall average`, with m = 5, so 5.0★ from 2 reviews doesn't outrank 4.6★ from 80.
+
 ## Wording rules (enforced by tests where possible)
 1. Never "diagnose", never "safe days", never a probability of disease.
 2. Health claims say how strong the evidence is ("small studies", "many people").

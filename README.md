@@ -6,6 +6,7 @@ and **which** specialist, lets you book them, and supports your cycle, sleep and
 - Log any health issue (headache, toothache, skin rash, hair fall, tiredness, fever, stomach, joint pain, low mood...) with severity and notes
 - Rule-based suggestions: severe → "see a doctor soon", recurring → the right specialist, several general symptoms → general checkup, plus lifestyle tips. Every suggestion says why. **It never diagnoses.**
 - Find doctors by specialty, call the clinic, book and cancel appointments
+- **Doctors near me:** your location or a typed area → Her Aura doctors (★ ratings, profile + your history) and real nearby hospitals and clinics from OpenStreetMap, with distance, call, directions and a map; sort by top rated or nearest
 - **Cycle + temperature:** symptom counter based on the Goff index; basal body temperature with after-the-fact ovulation confirmation (3-over-6 rule). **Not a contraceptive**, and the app says so wherever temperatures appear
 - **Sleep:** nightly log, 7-night averages, wind-down routines, a heads-up in the pre-period week
 - **Mind:** a 7-day beginner mindfulness programme that unlocks day by day

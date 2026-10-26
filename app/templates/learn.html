@@ -24,7 +24,7 @@
 {% block content %}
 <h1>Learn</h1>
 <p class="lead">Trusted reading on women's health from the WHO, NHS and ACOG, with a short summary from us. Plan: <strong id="plan">{{ user.plan | capitalize }}</strong>
-  {% if user.plan == 'free' %} · <a href="/premium">See Premium</a>{% endif %}</p>
+  {% if user.plan == 'free' %} · <a href="/premium">See Premium plans</a>{% endif %}</p>
 {% if unlocked %}<div class="alert success" id="success-message">Unlocked for 24 hours. Enjoy the read.</div>{% endif %}
 
 <form method="get" action="/learn" class="filter" id="topic-filter">

@@ -108,11 +108,22 @@ Workouts (type, duration, sets/reps/weight), weekly goals, progress chart.
 ## US-20 Nutrition and calorie goals (Planned)
 Daily meals with calories and protein, a goal based on age, height, weight and activity, and tips linked to logged issues (e.g. hair fall → protein/iron).
 
-## US-21 Doctor reviews (Planned)
-Rate a doctor 1-5 only after a completed appointment; one review per appointment; average shown on the doctor card.
+## US-21 Doctor profiles and reviews (Done)
+As a patient, I want to see a doctor's profile, my own history with them, and other patients' ratings.
+- AC1: A profile shows specialty, qualifications, years of experience, languages, a short bio, the clinic, call and directions.
+- AC2: "Your history" lists my own appointments with that doctor (past and upcoming), and nobody else's.
+- AC3: I can rate a doctor 1-5 (with an optional comment) only after a past, non-cancelled visit with them; one review per visit.
+- AC4: Reviews show only the reviewer's first name. Demo reviews are labelled "Sample review (demo data)".
+- AC5: The rating shown is the average; rankings use a weighted rating so a few reviews can't outrank many.
 
-## US-22 Hospitals by specialty (Planned)
-Search hospitals and clinics by the specialties and diseases they treat; distance from the user.
+## US-22 Doctors near me (Done)
+As a patient, I want doctors and hospitals near me for the specialty I need, ranked by rating or distance.
+- AC1: "Use my location" (with permission) or a typed area (Bangladesh) finds nearby places; the exact location is never stored and is rounded to about 1 km before being sent to OpenStreetMap.
+- AC2: Two lists: Her Aura doctors (bookable, rated, with profile + history) and other hospitals/clinics from OpenStreetMap (labelled as not verified), each with distance in km, call (when a phone is known) and directions.
+- AC3: Sort "Top rated" (weighted rating, then distance, unrated last) or "Nearest" (distance first).
+- AC4: The specialty filter applies to both lists; hospitals count for every specialty.
+- AC5: If the map service is down or slow, Her Aura doctors still show and the page explains the gap; a second public server is tried first.
+- AC6: Health data (specialty, symptoms, logs) is never sent to any map service. OpenStreetMap attribution is shown.
 
 ## US-23 AI health assistant (Planned)
 An LLM reads the user's history and explains patterns, suggests specialists and lifestyle changes. Must cite the user's own logs, never diagnose, always show emergency guidance, and fall back to the US-17 rules when unavailable. Tested with an eval suite.

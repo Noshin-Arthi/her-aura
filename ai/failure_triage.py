@@ -85,7 +85,8 @@ def main() -> None:
              "> AI suggestions. Verify each one before changing code.", ""]
     for f in failures:
         print(f"Diagnosing: {f.title} [{f.project}]")
-        d = ask_structured(system, f"<failure>\n{f.model_dump_json(indent=2)}\n</failure>\n\n<source>\n{related_source(f)}\n</source>", Diagnosis)
+        d = ask_structured(system, f"<failure>\n{f.model_dump_json(indent=2)}\n</failure>\n\n<source>\n{related_source(f)}\n</source>", Diagnosis,
+                           tool="failure_triage")
         lines += [f"## {f.title} ({f.project})", f"- **Category:** {d.category} ({d.confidence} confidence)",
                   f"- **Evidence:** {d.evidence}", f"- **Suggested fix:** {d.suggested_fix}",
                   f"- **Verify by:** {d.verify_by}", "", "<details><summary>Raw error</summary>", "",

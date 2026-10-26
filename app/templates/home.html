@@ -54,7 +54,7 @@
   <h2>Specialists you can book</h2>
   <div class="chips">
     {% for specialty, count in specialty_counts %}
-    <a class="chip link-chip" href="/register" data-testid="specialty-chip">{{ specialty }} <span class="count">{{ count }}</span></a>
+    <a class="chip link-chip" href="/register" data-testid="specialty-chip" aria-label="Create an account to book a {{ specialty }} doctor ({{ count }} available)">{{ specialty }} <span class="count">{{ count }}</span></a>
     {% endfor %}
   </div>
   <p class="muted small">Demo data: all doctors and clinics shown are fictional.</p>

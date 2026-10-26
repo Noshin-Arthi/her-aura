@@ -9,14 +9,15 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.deps import current_user
-from app.models import Appointment, Doctor, EmotionalCheckIn, HealthIssueLog, MindfulnessSession, Slot, SleepLog, SymptomLog, User
+from app.models import Appointment, Doctor, DoctorProfile, DoctorReview, EmotionalCheckIn, HealthIssueLog, MindfulnessSession, Slot, SleepLog, SymptomLog, User
 from app.schemas import (
-    AppointmentOut, ArticleOut, BookIn, EmotionalIn, EmotionalOut, PlanOut, CycleStatusOut, DoctorOut, MindfulnessProgressOut, SleepIn, SleepOut, HealthIssueIn, HealthIssueOut, InsightOut, LoginIn, RegisterIn,
+    AppointmentOut, ArticleOut, ReviewIn, BookIn, EmotionalIn, EmotionalOut, PlanOut, CycleStatusOut, DoctorOut, MindfulnessProgressOut, SleepIn, SleepOut, HealthIssueIn, HealthIssueOut, InsightOut, LoginIn, RegisterIn,
     PreviewIn, SlotOut, SuggestionsOut, SymptomLogIn, SymptomLogOut, UserOut,
 )
 from app.security import hash_password, verify_password
 from app.services.daily_logs import LogError, copy_previous_day
-from app.services import emotional_load, health_suggestions, learn_access, wellbeing
+from app.services import doctors as doctor_service, emotional_load, health_suggestions, learn_access, osm, wellbeing
+from app.services.geo import rank
 from app.services.cycle import cycle_status, pre_period_days
 from app.services.health_insights import period_start_dates
 from app.services.health_insights import build_insight
@@ -307,6 +308,84 @@ def emotional_insights_for(db: Session, user_id: int) -> dict:
 @router.get("/emotional/insights")
 def emotional_insights(user: User = Depends(current_user), db: Session = Depends(get_db)):
     return emotional_insights_for(db, user.id)
+
+
+# ---------- Doctors near me (OpenStreetMap + Her Aura reviews) ----------
+SORTS = ("rating", "distance")
+
+
+@router.get("/geocode")
+def geocode(q: str):
+    """Typed area -> coordinates (Bangladesh only). Public: no health data involved."""
+    try:
+        place = osm.geocode(q)
+    except osm.ProviderError as e:
+        raise HTTPException(status_code=503, detail=str(e))
+    if place is None:
+        raise HTTPException(status_code=404, detail="Area not found")
+    return place
+
+
+@router.get("/nearby")
+def nearby(lat: float, lng: float, specialty: str | None = None, sort: str = "rating", radius_km: float = 5,
+           user: User = Depends(current_user), db: Session = Depends(get_db)):
+    if not (-90 <= lat <= 90 and -180 <= lng <= 180):
+        raise HTTPException(status_code=422, detail="Invalid coordinates")
+    if sort not in SORTS:
+        raise HTTPException(status_code=422, detail="sort must be 'rating' or 'distance'")
+    radius_km = min(max(radius_km, 1), 15)
+    her_aura = rank(doctor_service.her_aura_doctors(db, lat, lng, specialty), sort)
+    external, provider_error = [], None
+    try:
+        external = rank(doctor_service.external_places(lat, lng, specialty, radius_km), "distance")
+    except osm.ProviderError as e:
+        provider_error = str(e)          # Her Aura doctors still show; the UI explains the gap
+    for item in her_aura + external:
+        item.pop("score", None)
+    return {"her_aura": her_aura, "external": external, "provider_error": provider_error,
+            "sort": sort, "radius_km": radius_km, "attribution": osm.ATTRIBUTION}
+
+
+def _doctor_profile(db: Session, doctor_id: int, user: User) -> dict:
+    d = db.get(Doctor, doctor_id)
+    if d is None:
+        raise HTTPException(status_code=404, detail="Doctor not found")
+    profile = db.get(DoctorProfile, doctor_id)
+    reviews = list(db.scalars(select(DoctorReview).where(DoctorReview.doctor_id == doctor_id)
+                              .order_by(DoctorReview.created_at.desc())))
+    history = list(db.scalars(select(Appointment).join(Slot).where(
+        Appointment.patient_id == user.id, Slot.doctor_id == doctor_id).order_by(Slot.starts_at.desc())))
+    now = datetime.now()
+    reviewed = {r.appointment_id for r in reviews if r.appointment_id}
+    avg = round(sum(r.rating for r in reviews) / len(reviews), 1) if reviews else None
+    return {
+        "id": d.id, "name": d.full_name, "specialty": d.specialty, "clinic": d.clinic.name,
+        "address": d.clinic.address, "phone": d.clinic.phone, "lat": d.clinic.latitude, "lng": d.clinic.longitude,
+        "qualifications": profile.qualifications if profile else "", "years_experience": profile.years_experience if profile else None,
+        "languages": profile.languages if profile else "", "bio": profile.bio if profile else "",
+        "rating": avg, "review_count": len(reviews),
+        "reviews": [{"rating": r.rating, "comment": r.comment, "reviewer": r.reviewer_name, "sample": r.is_sample,
+                     "date": r.created_at.date().isoformat()} for r in reviews],
+        "history": [{"appointment_id": a.id, "starts_at": a.slot.starts_at.isoformat(), "status": a.status,
+                     "reason": a.reason,
+                     "can_review": a.status != "cancelled" and a.slot.starts_at <= now and a.id not in reviewed}
+                    for a in history],
+        "directions_url": osm.directions_url(d.clinic.latitude, d.clinic.longitude) if d.clinic.latitude else None,
+    }
+
+
+@router.get("/doctors/{doctor_id}")
+def doctor_profile(doctor_id: int, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    return _doctor_profile(db, doctor_id, user)
+
+
+@router.post("/doctors/{doctor_id}/reviews", status_code=201)
+def review_doctor(doctor_id: int, body: ReviewIn, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    try:
+        doctor_service.add_review(db, user.id, doctor_id, body.appointment_id, body.rating, body.comment, user.full_name)
+    except doctor_service.ReviewError as e:
+        raise HTTPException(status_code=409, detail=str(e))
+    return _doctor_profile(db, doctor_id, user)
 
 
 # ---------- Doctors & booking ----------

@@ -9,7 +9,7 @@ regulatory clearance (e.g. FDA De Novo Class II, CE marking) and clinical studie
 """
 from datetime import date, timedelta
 
-from app.services.health_insights import average_cycle_length, period_start_dates
+from app.services.health_insights import average_cycle_length, average_period_length, period_ranges, period_start_dates
 
 LOW_WINDOW = 6
 HIGH_RUN = 3
@@ -52,6 +52,19 @@ def is_late_luteal(next_period: date | None, today: date) -> bool:
     return 0 < (next_period - today).days <= LATE_LUTEAL_DAYS
 
 
+def cycle_phase(last_start: date | None, last_end: date | None, next_period: date | None, today: date) -> str | None:
+    """A plain-language name for where today sits in the cycle. A rough guide from logged dates, not a measurement."""
+    if last_start is None:
+        return None
+    if last_end is not None and last_start <= today <= last_end:
+        return "Period"
+    if is_late_luteal(next_period, today):
+        return "Pre-period week"
+    if next_period is not None and today >= next_period:
+        return "Period due"
+    return "Between periods"
+
+
 def cycle_status(logs, today: date) -> dict:
     """Everything the UI shows about the cycle, from the user's symptom logs."""
     starts = period_start_dates(logs)
@@ -60,8 +73,16 @@ def cycle_status(logs, today: date) -> dict:
     current_start = max(starts) if starts else None
     readings = [(l.log_date, l.bbt_celsius) for l in logs
                 if getattr(l, "bbt_celsius", None) is not None and (current_start is None or l.log_date >= current_start)]
+    ranges = period_ranges(logs)
+    last_end = ranges[-1][1] if ranges else None
     return {
         "last_period_start": current_start,
+        "last_period_end": last_end,
+        "period_ongoing": last_end == today,
+        "periods": [{"start": s, "end": e, "days": (e - s).days + 1} for s, e in reversed(ranges)],
+        "average_period_length": average_period_length(logs),
+        "cycle_day": (today - current_start).days + 1 if current_start and current_start <= today else None,
+        "phase": cycle_phase(current_start, last_end, next_period, today),
         "average_cycle_length": average,
         "next_period": next_period,
         "late_luteal": is_late_luteal(next_period, today),

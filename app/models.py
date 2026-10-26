@@ -159,3 +159,31 @@ class EmotionalCheckIn(Base):
     areas: Mapped[str] = mapped_column(String(200), default="")
     handoff: Mapped[str] = mapped_column(String(300), default="")   # one thing I could hand off
     notes: Mapped[str] = mapped_column(Text, default="")
+
+
+class DoctorProfile(Base):
+    """Public profile details. A separate table so live databases get it without a migration."""
+    __tablename__ = "doctor_profiles"
+
+    doctor_id: Mapped[int] = mapped_column(ForeignKey("doctors.id"), primary_key=True)
+    qualifications: Mapped[str] = mapped_column(String(200), default="")
+    years_experience: Mapped[int] = mapped_column(Integer, default=0)
+    languages: Mapped[str] = mapped_column(String(120), default="")
+    bio: Mapped[str] = mapped_column(Text, default="")
+
+
+class DoctorReview(Base):
+    """A patient's rating of a doctor after a visit. One review per appointment.
+    `is_sample` marks clearly labelled demo reviews shipped with the fictional demo doctors."""
+    __tablename__ = "doctor_reviews"
+    __table_args__ = (UniqueConstraint("appointment_id", name="uq_review_appointment"),)
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    doctor_id: Mapped[int] = mapped_column(ForeignKey("doctors.id"), index=True)
+    patient_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    appointment_id: Mapped[int | None] = mapped_column(ForeignKey("appointments.id"), nullable=True)
+    rating: Mapped[int] = mapped_column(Integer)
+    comment: Mapped[str] = mapped_column(Text, default="")
+    reviewer_name: Mapped[str] = mapped_column(String(80), default="")
+    is_sample: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
